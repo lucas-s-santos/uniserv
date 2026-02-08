@@ -1,12 +1,10 @@
 <?php
-    session_start();
+    include_once "../includes/bootstrap.php";
     if (!isset($_SESSION['cpf']) || (int)$_SESSION['funcao'] !== 1) {
         $_SESSION['avisar'] = "Acesso restrito para administradores.";
         header('location: ../login.php');
         exit;
     }
-    include_once("../conexao.php");
-    include_once("../audit.php");
 ?>
 <?php
     $acao = "nada";
@@ -28,17 +26,25 @@
         $nome = $_POST['nome'];
         $apelido = $_POST['apelido'];
         $estado = $_POST['estado'];
+        $cidade = $_POST['cidade'];
         $cpf = $_POST['cpf'];
         $telefone = $_POST['telefone'];
         $email = $_POST['email'];
-        $senha = $_POST['senha'];
+        $senha = trim($_POST['senha']);
         $genero = $_POST['genero'];
         $data = $_POST['data_ani'];
 
-        $comando_editar = "UPDATE registro SET nome='$nome', apelido='$apelido', estado='$estado', cpf='$cpf', email='$email', telefone='$telefone', senha='$senha', sexo='$genero',
-         atualizar='1', data_ani='$data' WHERE id_registro='$id'";
+        if ($senha !== '') {
+            $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, senha=?, sexo=?, atualizar='1', data_ani=? WHERE id_registro=?");
+            $stmt->bind_param("ssssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $senha_hash, $genero, $data, $id);
+        } else {
+            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, sexo=?, atualizar='1', data_ani=? WHERE id_registro=?");
+            $stmt->bind_param("ssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $genero, $data, $id);
+        }
 
-        mysqli_query($conn, $comando_editar);
+        $stmt->execute();
+        $stmt->close();
         audit_log($conn, 'editar', 'registro', $id, "Admin editou usuario $id");
 
         unset($_SESSION['id_adm']);

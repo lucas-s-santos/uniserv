@@ -1,33 +1,26 @@
 <?php
-    session_start();
-    if (!isset($_SESSION['cpf'])) {
-        $_SESSION['avisar'] = "Voce precisa estar logado para acessar esta area.";
-        header('location: ../login.php');
+    include_once "../includes/bootstrap.php";
+    include_once "../includes/auth.php";
+    require_login('../login.php', 'Voce precisa estar logado para acessar esta area.');
+    require_role([3], '../login.php', 'Acesso apenas para clientes interessados em colaborar.');
+
+    $id = isset($_POST['id_pessoal']) ? (int)$_POST['id_pessoal'] : 0;
+    if ($id <= 0 || $id !== (int)$_SESSION['id_acesso']) {
+        $_SESSION['avisar'] = "ID invalido.";
+        header("Location: ../index.php");
         exit;
     }
-    if ((int)$_SESSION['funcao'] !== 3) {
-        $_SESSION['avisar'] = "Acesso apenas para clientes interessados em colaborar.";
-        header('location: ../login.php');
-        exit;
-    }
-    include_once("../conexao.php");
-?>
-<?php
-    $acao = "nada";
-    $acao = $_POST['id_pessoal'];
 
-    if ($acao <> "nada") {
-        $telefone = " "; $descricao =" ";
-        $id = $acao;
-        $telefone = $_POST['telefone'];
-        $cnpj = $_POST['cnpj'];
-        $descricao = $_POST['descricao'];
-        $email = $_POST['email'];
+    $telefone = isset($_POST['telefone']) ? trim($_POST['telefone']) : '';
+    $cidade = isset($_POST['cidade']) ? trim($_POST['cidade']) : '';
+    $cnpj = isset($_POST['cnpj']) ? trim($_POST['cnpj']) : '';
+    $descricao = isset($_POST['descricao']) ? trim($_POST['descricao']) : '';
+    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
 
-        $comando_editar = "UPDATE registro SET email='$email', telefone='$telefone', cnpj='$cnpj', descricao='$descricao', funcao='2', atualizar='1' WHERE id_registro='$id'";
-
-        mysqli_query($conn, $comando_editar);
-    }
+    $stmt = $conn->prepare("UPDATE registro SET email=?, telefone=?, cidade=?, cnpj=?, descricao=?, funcao='2', atualizar='1' WHERE id_registro=?");
+    $stmt->bind_param("sssssi", $email, $telefone, $cidade, $cnpj, $descricao, $id);
+    $stmt->execute();
+    $stmt->close();
 
     header("Location: ../index.php");
 ?>

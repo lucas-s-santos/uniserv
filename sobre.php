@@ -17,8 +17,8 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
-        <div style="width:100%; height: 80px;"></div>
+        <?php include 'menu.php'; ?>
+        <div class="menu-spacer"></div>
         <div class="title">Sobre</div>
         <div class="texto">Esse site foi desenvolvido por Gabriel Nepomuceno de Almeida dos Santos em um projeto de programação</div>
         <div class="texto">Senac - Curso de Tecnico em Informatica</div>

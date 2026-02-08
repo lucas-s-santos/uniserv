@@ -1,21 +1,10 @@
 <?php
-    session_start();
-    include_once "conexao.php";
-    include_once "status.php";
-    include_once "audit.php";
-        $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
-        $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
-    if (!isset($_SESSION['cpf'])) {
-        $_SESSION['avisar'] = "Você precisa estar logado no site!";
-        header('location: login.php');
-        exit;
-    }
-    $role = (int)$_SESSION['funcao'];
-    if ($role !== 1 && $role !== 3) {
-        $_SESSION['avisar'] = "Acesso restrito para clientes.";
-        header('location: login.php');
-        exit;
-    }
+    include_once "includes/bootstrap.php";
+    include_once "includes/auth.php";
+    $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
+    $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
+    require_login();
+    require_role([1, 3], 'login.php', 'Acesso restrito para clientes.');
     if (isset($_GET['teste'])) {
         $_SESSION['ordem_id'] = $_GET['teste'];
     }
@@ -49,7 +38,7 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
+        <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <br>
         <object data="chamarsub.php" height="600px" width="100%"></object>

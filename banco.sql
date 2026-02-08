@@ -23,7 +23,8 @@ CREATE TABLE registro (
   cnpj VARCHAR(20) NULL,
   email VARCHAR(50) NULL,
   telefone VARCHAR(17) NULL,
-  senha VARCHAR(15) NULL,
+  foto VARCHAR(255) NULL,
+  senha VARCHAR(255) NULL,
   servicos_ok INTEGER UNSIGNED NULL,
   data_ani DATE NULL,
   funcao BOOL NULL,
@@ -72,6 +73,17 @@ CREATE TABLE trabalhador_funcoes (
   PRIMARY KEY(id_trafun),
   INDEX trabalhador_funcoes_FKIndex1(registro_id_registro),
   INDEX trabalhador_funcoes_FKIndex2(funcoes_id_funcoes)
+);
+
+CREATE TABLE notificacoes (
+  id_notificacao INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  registro_id_registro INTEGER UNSIGNED NOT NULL,
+  mensagem TEXT NOT NULL,
+  lida TINYINT(1) DEFAULT 0,
+  link VARCHAR(255) NULL,
+  data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(id_notificacao),
+  INDEX notificacoes_user(registro_id_registro)
 );
 
 SELECT * FROM trabalhador_funcoes;

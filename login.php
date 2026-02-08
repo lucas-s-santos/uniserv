@@ -37,35 +37,22 @@
                 notice.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             function testarSenha() {
-                let formLOG = document.getElementById("form2");
-                    let campoCpf = formLOG.cpf_login.value,
-                        campoSenha = formLOG.senha_login.value;
-                    <?php
-                        $pesquise_usuarios= "SELECT * FROM registro";
-                        $resultado = mysqli_query($conn, $pesquise_usuarios);
-                        while ($linha = mysqli_fetch_array($resultado)) {
-                            echo "if (campoCpf=='$linha[cpf]') {
-                                    if (campoSenha == '$linha[senha]') {
-                                        return true;
-                                    } else {
-                                        showFormNotice('Senha incorreta. Tente novamente.');
-                                        formLOG.senha_login.value = '';
-                                        return false;
-                                    }
-                            }";
-                        }
-                    ?>
-                showFormNotice("CPF nao encontrado. Verifique e tente novamente.");
-                formLOG.senha_login.value = '';
-                return false;
+                return true;
             }
         </script>
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
+        <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
+        <?php
+            if (isset($_SESSION['avisar'])) {
+                $msg = htmlspecialchars($_SESSION['avisar'], ENT_QUOTES, 'UTF-8');
+                echo '<div class="notice" id="aviso"><div><strong>Aviso:</strong> ' . $msg . '</div></div>';
+                unset($_SESSION['avisar']);
+            }
+        ?>
         <div class="notice notice--warn" id="formNotice" style="display: none;">
             <div id="formNoticeText">Aviso</div>
             <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>

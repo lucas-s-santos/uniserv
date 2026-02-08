@@ -114,9 +114,14 @@
                     let campoEmail = formCAD.email.value,
                         campoCnpj = formCAD.cnpj.value,
                         campoDesc = formCAD.descricao.value,
-                        campoTelefone = formCAD.telefone.value;
+                        campoTelefone = formCAD.telefone.value,
+                        campoCidade = formCAD.cidade.value;
                         if (campoDesc.length > 125) {
                             showFormNotice('Limite de descricao atingido: '+campoDesc.length+' / 125.');
+                            return false;
+                        }
+                        if (campoCidade.trim() === "") {
+                            showFormNotice('Informe sua cidade.');
                             return false;
                         }
                     <?php
@@ -140,7 +145,7 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="../menu.php" height="80px" width="100%"></object></div>
+        <?php include '../menu.php'; ?>
         <div class="menu-spacer"></div>
         <div class="notice notice--warn" id="formNotice" style="display: none;">
             <div id="formNoticeText">Aviso</div>
@@ -158,6 +163,7 @@
                         echo '<div class="title" style="color: yellow">Colaborador</div>
                             <input type="hidden" name="id_pessoal" value="'.$_SESSION["id_acesso"].'">
                             <div class="campo-texto"> <label>E-mail (Obrigatorio)</label> <input type="text" name="email" value="'.$resultado7["email"].'" placeholder="Necessario para contato" required> </div>
+                            <div class="campo-texto"> <label>Cidade</label> <input type="text" name="cidade" value="'.$resultado7["cidade"].'" placeholder="Digite sua cidade" required> </div>
                             <div class="campo-texto"> <label>Cnpj (Se tiver)</label> <input type="text" name="cnpj" placeholder="É opcional"> </div>
                             <div class="campo-texto"> <label>Telefone(opcional)</label> <input type="text" id="telefone" name="telefone" value="'.$resultado7["telefone"].'"placeholder="É opcional, mas facilita comunicação"> </div>
                             <div class="campo-texto"> <label>Descrição</label> <input type="text" name="descricao" value="'.$resultado7["descricao"].'" placeholder="Escreva um pouco sobre você!"> </div>';
