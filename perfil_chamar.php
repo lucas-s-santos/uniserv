@@ -1,23 +1,12 @@
 <?php
-    session_start();
-    include_once("conexao.php");
-    include_once("audit.php");
-        include_once("status.php");
+    include_once "includes/bootstrap.php";
+    include_once "includes/auth.php";
     $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
     $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
-    if (!isset($_SESSION['cpf'])) {
-        $_SESSION['avisar'] = "Voce precisa estar logado para acessar esta area.";
-        header('location: login.php');
-        exit;
-    }
-    $role = (int)$_SESSION['funcao'];
-    if ($role !== 1 && $role !== 3) {
-        $_SESSION['avisar'] = "Acesso restrito para clientes.";
-        header('location: login.php');
-        exit;
-    }
+    require_login('login.php', 'Voce precisa estar logado para acessar esta area.');
+    require_role([1, 3], 'login.php', 'Acesso restrito para clientes.');
     if (isset($_GET['ta'])) {
-        $id_trafun = $_GET['ta']; 
+        $id_trafun = (int)$_GET['ta'];
     } else {
         $_SESSION['avisar'] = "Por favor, selecione novamente<br>quem deseja chamar";
         header("Location: index.php");
@@ -26,28 +15,18 @@
     if (isset($_POST['formnum'])) {
         $data_hj = date('Y/m/d');
 
-        $comando = "SELECT estado FROM registro WHERE id_registro = '$_SESSION[id_acesso]' LIMIT 1";
-        $joga_no_banco = mysqli_query($conn, $comando);
-        $usuario_location = mysqli_fetch_assoc($joga_no_banco);
-        $comando = "SELECT estado, cidade FROM registro WHERE id_registro = '$_POST[id_chamado]' LIMIT 1";
-        $joga_no_banco = mysqli_query($conn, $comando);
-        $colabo_location = mysqli_fetch_assoc($joga_no_banco);
         $erro = 'nao';
-        if ($usuario_location['estado'] <> $colabo_location['estado']) {
-            $_SESSION['avisar'] = 'Você não pode chamar alguem<br>de estado diferente!'; $erro = 'sim';
-        }
-        if ($_SESSION['cidade_preferida'] <> $colabo_location['cidade']) {
-            $_SESSION['avisar'] = 'Você não pode chamar alguem<br>de cidade diferente!'; $erro = 'sim';
-        }
         $teste_se_ocupado = "SELECT * FROM servico WHERE id_trabalhador = '$_POST[id_chamado]' AND ativo = '1'";
         $jogue_no_banco = mysqli_query($conn, $teste_se_ocupado); $ocupado = 'nao';
         while ($linha12 = mysqli_fetch_array($jogue_no_banco)) {
             $_SESSION['avisar'] = 'Esse colaborador está<br>ocupado em outro serviço';
             $erro = 'sim';
         }
-        $comando = "SELECT disponivel FROM trabalhador_funcoes WHERE id_trafun = '$_GET[ta]' LIMIT 1";
-        $jogue_no_banco = mysqli_query($conn, $comando);
-        $ta_on = mysqli_fetch_array($jogue_no_banco);
+        $stmt = $conn->prepare("SELECT disponivel FROM trabalhador_funcoes WHERE id_trafun = ? LIMIT 1");
+        $stmt->bind_param("i", $id_trafun);
+        $stmt->execute();
+        $ta_on = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
         if ($ta_on['disponivel'] == 0) {
             $_SESSION['avisar'] = 'Esse colaborador não<br>está disponível';
             $erro = 'sim';
@@ -65,6 +44,12 @@
                 $novo_servico_id = mysqli_insert_id($conn);
                 if ($novo_servico_id) {
                     audit_log($conn, 'criar', 'servico', $novo_servico_id, 'Chamado criado');
+                    $mensagem = 'Novo chamado de ' . $_SESSION['apelido'];
+                    $link = 'colabo/colaborador.php';
+                    $stmt = $conn->prepare("INSERT INTO notificacoes (registro_id_registro, mensagem, link) VALUES (?, ?, ?)");
+                    $stmt->bind_param("iss", $_POST['id_chamado'], $mensagem, $link);
+                    $stmt->execute();
+                    $stmt->close();
                 }
             unset ($_POST['formnum']);
             header("Location: servicos.php");
@@ -72,11 +57,14 @@
             header("Location: index.php");
         }
     }
-    $analise_servico= "SELECT C.nome 'nome_trabalhador', C.descricao 'descricao', C.data_ani 'data_aniversario', C.sexo 'genero', B.nome_func 'funcao', A.valor_hora 'valor_hora',
+    $analise_servico = "SELECT C.nome 'nome_trabalhador', C.descricao 'descricao', C.data_ani 'data_aniversario', C.sexo 'genero', B.nome_func 'funcao', A.valor_hora 'valor_hora',
     A.registro_id_registro 'id_trabalhador', A.certificado 'certificado', A.funcoes_id_funcoes 'id_funcao', A.id_trafun 'id_trafun' FROM trabalhador_funcoes A INNER JOIN
-    registro C ON C.id_registro = A.registro_id_registro INNER JOIN funcoes B ON B.id_funcoes = A.funcoes_id_funcoes WHERE id_trafun = '$id_trafun' LIMIT 1";
-    $joga_no_banco = mysqli_query($conn, $analise_servico);
-    $resultado_trafun = mysqli_fetch_assoc($joga_no_banco);
+    registro C ON C.id_registro = A.registro_id_registro INNER JOIN funcoes B ON B.id_funcoes = A.funcoes_id_funcoes WHERE id_trafun = ? LIMIT 1";
+    $stmt = $conn->prepare($analise_servico);
+    $stmt->bind_param("i", $id_trafun);
+    $stmt->execute();
+    $resultado_trafun = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 
     $comando_pra_contar = "SELECT COUNT(*) as 'conta' FROM servico WHERE id_trabalhador = '$resultado_trafun[id_trabalhador]' AND ativo='0' AND avaliacao>0";
     $joga_no_banco = mysqli_query($conn, $comando_pra_contar);
@@ -134,8 +122,8 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
-        <div style="width:100%; height: 80px;"></div>
+        <?php include 'menu.php'; ?>
+        <div class="menu-spacer"></div>
             <table class="final" style="text-align: left">
                 <tr><td colspan="2" id="id1" style="text-align: center"><div class="subtitle">Colaborador</div></td></tr>
                 <?php 

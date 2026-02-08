@@ -100,8 +100,8 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
-        <div style="width:100%; height: 80px;"></div>
+        <?php include 'menu.php'; ?>
+        <div class="menu-spacer"></div>
         <div class="title">Seção de Adm</div>
         <div class="admopcao">
             <p onclick="invisibleON('hidden5')">Adicionar Serviço</p>
@@ -194,6 +194,8 @@
                     <option value='Sergipe'>Sergipe - SE
                     <option value='Tocantins'>Tocantins - TO
                 </select> <br>
+                <label>Cidade:</label>
+                <input type='text' name='cidade' placeholder='Cidade' value='$resultado2[cidade]' required> <br>
                 <label>E-mail:</label>
                 <input type='text' name='email' placeholder='E-mail' value='$resultado2[email]'> <br>
                 <label>Telefone:</label>
@@ -208,8 +210,8 @@
                     <option value='O'>Outro
                     <option value='P'>Prefiro não falar
                 </select> <br>
-                <label>Senha:</label>
-                <input type='text' name='senha' placeholder='senha???' value='$resultado2[senha]' required> <br>
+                <label>Nova senha (opcional):</label>
+                <input type='password' name='senha' placeholder='Defina uma nova senha'> <br>
                 <div class='hidden_sub' style='text-align: center'><input type='submit' value='Editar' onclick='return testarOEditar()'></div>    
             </form>";
             unset ($_SESSION['id_adm']);
@@ -220,26 +222,31 @@
         <br><br>
         <div class="tabela_adm" id="tabela_cadastros">
             <table>
-                <tr><td>ID</td><td>NOME COMPLETO</td><td>CPF</td><td>ESTADO</td>
-                        <td>GÊNERO</td><td>CNPJ</td><td>EMAIL</td><td>TELEFONE</td><td>SENHA</td><td>Serviços prestados</td><td>Função</td></tr>
+                <tr><td>ID</td><td>NOME COMPLETO</td><td>CPF</td><td>ESTADO</td><td>CIDADE</td>
+                    <td>GÊNERO</td><td>CNPJ</td><td>EMAIL</td><td>TELEFONE</td><td>Serviços prestados</td><td>Função</td></tr>
                 <?php
                     if (isset($_SESSION['nome_adm'])) {$nome_filtro = $_SESSION['nome_adm'];} else {$nome_filtro = "";}
                     if (isset($_SESSION['cpf_adm'])) {$cpf_filtro = $_SESSION['cpf_adm'];} else {$cpf_filtro = "";}
-                    $pesquise_usuarios= "SELECT * FROM registro WHERE nome like '%$nome_filtro%' AND cpf like '%$cpf_filtro%'";
-                    $resultado = mysqli_query($conn, $pesquise_usuarios);
+                    $nome_like = "%".$nome_filtro."%";
+                    $cpf_like = "%".$cpf_filtro."%";
+                    $stmt = $conn->prepare("SELECT * FROM registro WHERE nome LIKE ? AND cpf LIKE ?");
+                    $stmt->bind_param("ss", $nome_like, $cpf_like);
+                    $stmt->execute();
+                    $resultado = $stmt->get_result();
                     $cont = 0;
                     while ($linha = mysqli_fetch_array($resultado)) {
                         $cont++;
-                        echo "<tr><td>$linha[id_registro]</td><td>$linha[nome]</td><td>$linha[cpf]</td><td>$linha[estado]</td><td>";
+                        echo "<tr><td>$linha[id_registro]</td><td>$linha[nome]</td><td>$linha[cpf]</td><td>$linha[estado]</td><td>$linha[cidade]</td><td>";
                         switch ($linha['sexo']) {case 'M': echo "Masculino"; break;    case 'F': echo "Feminino"; break;
                             case 'P': echo "Não falar"; break;    default: echo "Outro"; break; 
                         }   
-                        echo "</td><td>$linha[cnpj]</td><td>$linha[email]</td><td>$linha[telefone]</td><td>$linha[senha]</td><td>$linha[servicos_ok]</td><td>";
+                        echo "</td><td>$linha[cnpj]</td><td>$linha[email]</td><td>$linha[telefone]</td><td>$linha[servicos_ok]</td><td>";
                         switch ($linha['funcao']) {case '1': echo "Administrador"; break;    case '2': echo "Colaborador"; break;
                             default: echo "Cliente"; break; 
                         }
                         echo "</td></tr>";
                     }
+                    $stmt->close();
                     unset ($_SESSION['nome_adm'], $_SESSION['cpf_adm']);
                     echo "<tr><td>(X)</td><td>($cont) Resultados</td></tr>";
                 ?>

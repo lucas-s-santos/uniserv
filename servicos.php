@@ -82,7 +82,7 @@
 
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
+        <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
         <div class="notice notice--warn" id="formNotice" style="display: none;">

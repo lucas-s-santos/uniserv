@@ -49,39 +49,18 @@
         }
         function validarDados() {
             let formEDI = document.getElementById("editar");
-            let campoNome = formEDI.nome.value,
-            campoApelido = formEDI.apelido.value,
-            campoEstado = formEDI.estado,
-            campoEmail = formEDI.email.value,
-            campoTel = formEDI.telefone.value,
-            campoData = formEDI.data_ani,
-            campoGen = formEDI.genero,
-            campoSenha = formEDI.senha.value,
-            campoSenhaNova = formEDI.senhanova.value;
-                    <?php
-                        $pesquise_usuarios= "SELECT * FROM registro";
-                        $resultado_users = mysqli_query($conn, $pesquise_usuarios);
-                        while ($linha = mysqli_fetch_array($resultado_users)) {
-                            echo "if (campoEmail != '') {if (campoEmail == '$linha[email]' && '$_SESSION[id_acesso]' != '$linha[id_registro]') {showFormNotice('E-mail ja cadastrado.'); return false;}}";
-
-                            echo "if (campoTel != '') {if (campoTel == '$linha[telefone]' && '$_SESSION[id_acesso]' != '$linha[id_registro]') {showFormNotice('Telefone ja cadastrado.'); return false;}}";
-
-                            echo "if ('$_SESSION[id_acesso]' == '$linha[id_registro]' && campoSenha != '$linha[senha]') {showFormNotice('Senha atual incorreta.'); return false;}";
-                        }
-                    ?>
-                    if (campoSenhaNova != "" && campoSenhaNova.length < 8) {
-                        showFormNotice("A nova senha deve ter no minimo 8 caracteres.");
-                        return false;
-                    }
-                    return true;
-
-                    
-                }
+            let campoSenhaNova = formEDI.senhanova.value;
+            if (campoSenhaNova != "" && campoSenhaNova.length < 8) {
+                showFormNotice("A nova senha deve ter no minimo 8 caracteres.");
+                return false;
+            }
+            return true;
+        }
     </script>
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
+        <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
         <div class="notice notice--warn" id="formNotice" style="display: none;">
@@ -89,7 +68,7 @@
             <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
         </div>
         <?php
-            echo "<form action='adm/processa_editar_perfil.php' method='POST' class='hidden_two form-card' id='editar' style='text-align: left;'>
+            echo "<form action='adm/processa_editar_perfil.php' method='POST' enctype='multipart/form-data' class='hidden_two form-card' id='editar' style='text-align: left;'>
                 <input type='hidden' name='acao' value='$_SESSION[id_acesso]'>
                 <div class='title'>Editar</div>
                 <label>Nome:</label>
@@ -129,8 +108,12 @@
                 </select> <br>
                 <label>E-mail:</label>
                 <input type='email' name='email' placeholder='Escreva seu e-mail se quiser' value='$resultado[email]' required> <br>
+                <label>Cidade:</label>
+                <input type='text' name='cidade' placeholder='Digite sua cidade' value='$resultado[cidade]' required> <br>
                 <label>Telefone:</label>
                 <input type='text' id='telefone' name='telefone' placeholder='Telefone' value='$resultado[telefone]'> <br>
+                <label>Foto de perfil:</label>
+                <input type='file' name='foto' accept='image/png, image/jpeg'> <br>
                 <label>Gênero:</label>
                 <select name='genero'> 
                     <option value='$resultado[sexo]' selected>$resultado[sexo]
@@ -148,10 +131,15 @@
                     
             </form>
         <div class="title" style="text-align: left">Sobre você</div>
-        <?php echo "<div class='texto'>Nome: $resultado[nome] </div>
+        <?php
+            $foto_perfil = $resultado['foto'] ? $resultado['foto'] : 'image/logoservicore.jpg';
+            $foto_perfil_safe = htmlspecialchars($foto_perfil, ENT_QUOTES, 'UTF-8');
+            echo "<div class='texto'><img src='$foto_perfil_safe' alt='Foto de perfil' style='width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid #22314a;'></div>
+                <div class='texto'>Nome: $resultado[nome] </div>
                     <div class='texto'>Cpf: $resultado[cpf] </div>
                     <div class='botaolist'><a href='sair.php'>Sair</a></div>
                     <div class='texto'>Estado: $resultado[estado] </div>
+                    <div class='texto'>Cidade: $resultado[cidade] </div>
                     <div class='texto'>E-mail: $resultado[email] </div>
                     <div class='texto'>Telefone: $resultado[telefone] </div>
                     <div class='texto'>Data de nascimento: $data_a </div>
@@ -161,7 +149,13 @@
                     }
                     echo "</div>";
         ?>
-        <div class='botaolist'><a onclick='invisibleON("editar")'>Editar</a> <a href='historico.php?qm=1'>Histórico</a></div>
+        <div class='botaolist'><a onclick='invisibleON("editar")'>Editar</a> <a href='historico.php?qm=1'>Histórico</a>
+        <?php
+            if ((int)$_SESSION['funcao'] === 3) {
+                echo " <a href='colabo/cadastro_colaborador.php'>Virar colaborador</a>";
+            }
+        ?>
+        </div>
         </main>
     </body>
 

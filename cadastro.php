@@ -41,6 +41,7 @@
                     let formCAD = document.getElementById("form1");
                     let campoNome = formCAD.nome.value,
                         campoEstado = formCAD.estado,
+                        campoCidade = formCAD.cidade.value,
                         campoCpf = formCAD.cpf.value,
                         campoEmail = formCAD.email.value,
                         campoTel = formCAD.telefone.value,
@@ -67,18 +68,11 @@
                         showFormNotice("Telefone incompleto.");
                         return false;
                     }
+                    if (campoCidade.trim() === "") {
+                        showFormNotice("Informe sua cidade.");
+                        return false;
+                    }
                     
-                    <?php
-                        $pesquise_usuarios= "SELECT * FROM registro";
-                        $resultado = mysqli_query($conn, $pesquise_usuarios);
-                        while ($linha = mysqli_fetch_array($resultado)) {
-                            echo "if (campoCpf == '$linha[cpf]') {showFormNotice('CPF ja cadastrado.'); return false;}";
-
-                            echo "if (campoEmail != '') {if (campoEmail == '$linha[email]') {showFormNotice('E-mail ja cadastrado.'); return false;}}";
-
-                            echo "if (campoTel != '') {if (campoTel == '$linha[telefone]') {showFormNotice('Telefone ja cadastrado.'); return false;}}";
-                        }
-                    ?>
                     if (campoSenha.length < 8) {
                         showFormNotice("Senha deve ter no minimo 8 caracteres.");
                         return false;
@@ -93,7 +87,7 @@
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
-        <div style="width:100%; position: fixed"><object data="menu.php" height="80px" width="100%"></object></div>
+        <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
         <div class="notice notice--warn" id="formNotice" style="display: none;">
@@ -141,6 +135,7 @@
                             </select>
                         </div>
                         <div class="campo-texto"> <label>CPF </label> <input type="text" name="cpf" id="cpf" placeholder="Digite o cpf" required> </div>
+                        <div class="campo-texto"> <label>Cidade </label> <input type="text" name="cidade" placeholder="Digite sua cidade" required> </div>
                         <div class="campo-texto"> <label>E-mail(opcional)</label> <input type="text" name="email" placeholder="É opcional, mas pode te ajudar"> </div>
                         <div class="campo-texto"> <label>Telefone(opcional) </label> <input type="text" id="telefone" name="telefone" placeholder="É opcional, mas facilita comunicação"> </div>
                         <div class="campo-texto"> <label>Data de nascimento </label> <input type="date" id="data_ani" name="data_ani" required> </div>

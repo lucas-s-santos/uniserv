@@ -25,6 +25,18 @@
     if (!isset($_SESSION['ordem_id'])) {
         $_SESSION['ordem_id'] = 1;
     }
+
+    $usuario_cidade = '';
+    $usuario_estado = '';
+    $buscar_usuario = "SELECT cidade, estado FROM registro WHERE id_registro = '$_SESSION[id_acesso]' LIMIT 1";
+    $res_usuario = mysqli_query($conn, $buscar_usuario);
+    if ($res_usuario) {
+        $linha_usuario = mysqli_fetch_assoc($res_usuario);
+        if ($linha_usuario) {
+            $usuario_cidade = $linha_usuario['cidade'];
+            $usuario_estado = $linha_usuario['estado'];
+        }
+    }
     if ($_SESSION['ordem_id']==2) {
         if (isset($_POST['funcao_servico'])) {
             $_SESSION['funcao_preferida'] = $_POST['funcao_servico'];
@@ -40,21 +52,28 @@
         }
     }
     if ($_SESSION['ordem_id']==3) {
-        if (isset($_POST['cidade_servico'])) {
-            $_SESSION['cidade_preferida'] = $_POST['cidade_servico'];
+        if (isset($_POST['rua'], $_POST['numero'], $_POST['bairro'])) {
             $_SESSION['endereco'] = "Rua: $_POST[rua]. Número: $_POST[numero]. Bairro: $_POST[bairro]";
         }
-        $selecione_estado = "SELECT estado FROM registro WHERE id_registro = '$_SESSION[id_acesso]'";
-        $jogue_no_banco = mysqli_query($conn, $selecione_estado);
-        $estado = mysqli_fetch_array($jogue_no_banco);
-        $_SESSION['estado'] = $estado['estado'];
-        $veja_todos_dessa_cidade= "SELECT * FROM registro WHERE cidade = '$_SESSION[cidade_preferida]' AND funcao = '2' AND estado = '$_SESSION[estado]'";
-        $resultados_encontrados = mysqli_query($conn, $veja_todos_dessa_cidade);
-        $cont_2 = 0;
-        while ($linha19 = mysqli_fetch_array($resultados_encontrados)) {
-            $cont_2 = $cont_2+1;
-            $ids_de_pessoas2[$cont_2] = $linha19['id_registro'];
-            $nome_de_pessoas2[$cont_2] = $linha19['apelido'];
+        if (isset($_POST['cidade_servico']) && $_POST['cidade_servico'] !== '') {
+            $_SESSION['cidade_preferida'] = $_POST['cidade_servico'];
+        } else if (!isset($_SESSION['cidade_preferida']) && $usuario_cidade !== '') {
+            $_SESSION['cidade_preferida'] = $usuario_cidade;
+        }
+        if (!isset($_SESSION['estado']) && $usuario_estado !== '') {
+            $_SESSION['estado'] = $usuario_estado;
+        }
+        if (!isset($_SESSION['cidade_preferida']) || $_SESSION['cidade_preferida'] === '') {
+            $cont_2 = 0;
+        } else {
+            $veja_todos_dessa_cidade= "SELECT * FROM registro WHERE cidade = '$_SESSION[cidade_preferida]' AND funcao = '2' AND estado = '$_SESSION[estado]'";
+            $resultados_encontrados = mysqli_query($conn, $veja_todos_dessa_cidade);
+            $cont_2 = 0;
+            while ($linha19 = mysqli_fetch_array($resultados_encontrados)) {
+                $cont_2 = $cont_2+1;
+                $ids_de_pessoas2[$cont_2] = $linha19['id_registro'];
+                $nome_de_pessoas2[$cont_2] = $linha19['apelido'];
+            }
         }
     }
 
@@ -131,15 +150,17 @@
         </form>';
         }
         if ($_SESSION['ordem_id'] == 2) {
+            $cidade_label = $usuario_cidade !== '' ? $usuario_cidade : 'Nao definida';
             echo '<form name="form2" method="POST" action="#" id="form3">
             <div class="fonte">
                 <div class="dentro">
-                    <div class="subtitle" style="color: yellow">Tem gente trabalhando nessa função nas seguintes cidades:</div>
+                    <div class="subtitle" style="color: yellow">Cidade do chamado</div>
+                    <div class="texto">Cidade atual: '.$cidade_label.'. Voce pode trocar abaixo.</div>
                     <div class="campo-texto"> <input type="hidden" name="formnum" value="3">
                         <select name="cidade_servico">
-                        <option value="Não selecionada" selected>Verifique se alguma é a sua:';
+                        <option value="" selected>Escolha a cidade:';
                         if ($cont == 0) {
-                            echo "<option value='0'> Sem cidades disponíveis";
+                            echo "<option value=''> Sem cidades disponíveis";
                         }
                         $cont2 = 0;
                         while ($cont > 0) {
@@ -155,11 +176,15 @@
                                 }
                             }
                             if ($resposta == "nao") {
-                                echo "<option value='".$resultado23['cidade']."'>".$resultado23['cidade'];
+                                $selected = ($usuario_cidade !== '' && $usuario_cidade === $resultado23['cidade']) ? ' selected' : '';
+                                echo "<option value='".$resultado23['cidade']."'".$selected.">".$resultado23['cidade'];
                             }
                             $cont2 = $cont2+1;
                             $cidades_on[$cont2] = $resultado23['cidade'];
                             $cont = $cont-1;
+                        }
+                        if ($usuario_cidade !== '' && $cont2 === 0) {
+                            echo "<option value='".$usuario_cidade."' selected>".$usuario_cidade;
                         }
                         echo '</select>
                     </div> 
@@ -207,6 +232,9 @@
                         }
                 }
                 $cont_2 = $cont_2-1;
+            }
+            if ($cont_2 == 0) {
+                echo "<tr><td colspan='3'>Nenhum colaborador encontrado para esta cidade e funcao.</td></tr>";
             }
             echo "</table></div>";
         }

@@ -1,20 +1,21 @@
 <?php
-    session_start();
-    if (!isset($_SESSION['cpf']) || (int)$_SESSION['funcao'] !== 1) {
-        $_SESSION['avisar'] = "Acesso restrito para administradores.";
-        header('location: ../login.php');
+    include_once "../includes/bootstrap.php";
+    include_once "../includes/auth.php";
+    require_login('../login.php', 'Acesso restrito para administradores.');
+    require_role([1], '../login.php', 'Acesso restrito para administradores.');
+
+    $id = isset($_POST['id_adm']) ? (int)$_POST['id_adm'] : 0;
+    if ($id <= 0) {
+        $_SESSION['avisar'] = 'ID invalido.';
+        header("Location: ../administrador.php");
         exit;
     }
-    include_once("../conexao.php");
-    include_once("../audit.php");
-?>
-<?php
-    $_SESSION['id_adm'] = $_POST['id_adm'];
 
-    $comando_mysql3 = "DELETE FROM registro WHERE id_registro = '$_SESSION[id_adm]'";
-	mysqli_query($conn, $comando_mysql3);
-    audit_log($conn, 'excluir', 'registro', (int)$_SESSION['id_adm'], 'Admin excluiu usuario');
-    unset($_SESSION['id_adm']);
+    $stmt = $conn->prepare("DELETE FROM registro WHERE id_registro = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+    audit_log($conn, 'excluir', 'registro', $id, 'Admin excluiu usuario');
 
     header("Location: ../administrador.php");
 ?>
