@@ -28,14 +28,9 @@
             <title>Página principal</title>
             <script>
                 function showFormNotice(message) {
-                    let notice = document.getElementById("formNotice");
-                    let text = document.getElementById("formNoticeText");
-                    if (!notice || !text) {
-                        return;
+                    if (window.showToast) {
+                        showToast(message, "warn");
                     }
-                    text.textContent = message;
-                    notice.style.display = "flex";
-                    notice.scrollIntoView({ behavior: "smooth", block: "center" });
                 }
                 function validarDados() {
                     let formCAD = document.getElementById("form1");
@@ -90,10 +85,6 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-        <div class="notice notice--warn" id="formNotice" style="display: none;">
-            <div id="formNoticeText">Aviso</div>
-            <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
-        </div>
         <form name="form1" method="POST" action="processa_cad.php" id="form1">
             <div class="fonte">
                 <div class="dentro form-card">
@@ -161,7 +152,7 @@
     </body>
 
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 
 </html>

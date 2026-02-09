@@ -43,11 +43,33 @@ CREATE TABLE Servico (
   tempo_servico INTEGER UNSIGNED NULL,
   avaliacao INTEGER UNSIGNED NULL,
   ativo TINYINT NULL,
+  status_etapa TINYINT NULL,
   comentario TEXT NULL,
+  foto_antes VARCHAR(255) NULL,
+  foto_depois VARCHAR(255) NULL,
   data_2 DATE NULL,
   PRIMARY KEY(id_servico),
   INDEX Servico_FKIndex3(registro_id_registro),
   INDEX Servico_FKIndex4(funcoes_id_funcoes)
+);
+
+CREATE TABLE checklist_itens (
+  id_item INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  funcoes_id_funcoes INTEGER UNSIGNED NOT NULL,
+  descricao VARCHAR(120) NOT NULL,
+  ativo TINYINT(1) DEFAULT 1,
+  PRIMARY KEY(id_item),
+  INDEX checklist_funcoes(funcoes_id_funcoes)
+);
+
+CREATE TABLE servico_checklist (
+  id_checklist INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  servico_id INTEGER UNSIGNED NOT NULL,
+  item_id INTEGER UNSIGNED NOT NULL,
+  concluido TINYINT(1) DEFAULT 0,
+  PRIMARY KEY(id_checklist),
+  INDEX servico_checklist_servico(servico_id),
+  INDEX servico_checklist_item(item_id)
 );
 
 CREATE TABLE audit_log (

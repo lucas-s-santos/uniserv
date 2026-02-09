@@ -32,14 +32,21 @@
                 
 
                 function adicionarF() {
-                    alert('Adicionar forçado');
+                    if (window.showToast) {
+                        showToast('Adicionar forcado', 'info');
+                    }
                 }
 
                 function issoENumero(Y) {
                     let formCHECK = document.getElementById(Y);
                     let campoID = formCHECK.id_adm.value;
                     let teste = isNumber(campoID);
-                    if (teste == false) {alert('Isso não é um número!');}
+                    if (teste == false) {
+                        if (window.showToast) {
+                            showToast('Isso nao e um numero!', 'error');
+                        }
+                        return false;
+                    }
                     return teste;
                 }
 
@@ -60,15 +67,21 @@
                         campoGen = formEDITAR.genero,
                         campoSenha = formEDITAR.senha.value;
                     if (!testeoCpf(campoCpf)) {
-                        alert("Esse cpf é falso!");
+                        if (window.showToast) {
+                            showToast('Esse cpf e falso!', 'error');
+                        }
                         return false;
                     }
                     if (campoCpf.length != 14) {
-                        alert("Esse cpf está incompleto");
+                        if (window.showToast) {
+                            showToast('Esse cpf esta incompleto', 'error');
+                        }
                         return false;
                     }
                     if (campoTel.length != 15 && campoTel != "") {
-                        alert("Esse numero está incompleto");
+                        if (window.showToast) {
+                            showToast('Esse numero esta incompleto', 'error');
+                        }
                         return false;
                     }
                     <?php
@@ -83,11 +96,11 @@
                         $resultado = mysqli_query($conn, $pesquise_usuarios);
                         if (isset($_SESSION['id_adm'])) {
                             while ($linha = mysqli_fetch_array($resultado)) {
-                                echo "if (campoCpf != '$resultado2[cpf]') {if (campoCpf == '$linha[cpf]') {alert('Esse cpf ja foi cadastrado!'); return false;}}";
+                                echo "if (campoCpf != '$resultado2[cpf]') {if (campoCpf == '$linha[cpf]') {if (window.showToast) {showToast('Esse cpf ja foi cadastrado!', 'error');} return false;}}";
 
-                                echo "if (campoEmail != '$resultado2[email]' && campoEmail != '') {if (campoEmail == '$linha[email]') {alert('Esse email ja foi cadastrado'); return false;}}";
+                                echo "if (campoEmail != '$resultado2[email]' && campoEmail != '') {if (campoEmail == '$linha[email]') {if (window.showToast) {showToast('Esse email ja foi cadastrado', 'error');} return false;}}";
 
-                                echo "if (campoTel != '$resultado2[telefone]' && campoTel != '') {if (campoTel == '$linha[telefone]') {alert('Esse telefone já foi cadastrado!'); return false;}}";
+                                echo "if (campoTel != '$resultado2[telefone]' && campoTel != '') {if (campoTel == '$linha[telefone]') {if (window.showToast) {showToast('Esse telefone ja foi cadastrado!', 'error');} return false;}}";
                             }
                         }
                     ?>
@@ -102,22 +115,156 @@
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-        <div class="title">Seção de Adm</div>
-        <div class="admopcao">
-            <p onclick="invisibleON('hidden5')">Adicionar Serviço</p>
-            <p onclick="invisibleON('hidden1')">Analisar cadastros</p>
-            <p onclick="invisibleON('hidden2')">Editar</p>
-            <p onclick="invisibleON('hidden4')">Excluir</p>
-        </div>
+        <section class="page-header">
+            <div>
+                <div class="page-kicker">Administracao</div>
+                <h1 class="page-title">Painel do administrador</h1>
+                <p class="page-subtitle">Gerencie usuarios, servicos e acompanhe a atividade recente do sistema.</p>
+            </div>
+            <div class="page-actions">
+                <button type="button" class="btn btn-accent" onclick="invisibleON('hidden5')">Adicionar servico</button>
+                <a class="btn btn-ghost" href="#admin-filter-panel">Filtrar usuarios</a>
+                <a class="btn btn-primary" href="#tabela_cadastros">Ver cadastros</a>
+            </div>
+        </section>
 
-        <form action="adm/processa_pesquisa.php" method="POST" class="hidden" id="hidden1">
-            <div class="title">Pesquisar</div>
-            <label>Nome:</label>
-            <input type="text" name="nome_adm" placeholder="Filtro por nome"> <br>
-            <label>Cpf:</label>
-            <input type="text" name="cpf_adm" id="cpf" placeholder="Filtro por Cpf"> <br>
-            <div class="hidden_sub"><input type="submit"></div>
-        </form>
+        <section class="info-panel" id="admin-filter-panel">
+            <div class="section-title">Filtro rapido</div>
+            <p class="section-subtitle">Use nome ou CPF para reduzir a lista sem abrir o modal.</p>
+            <form action="adm/processa_pesquisa.php" method="POST" class="admin-filter">
+                <label for="admin-nome">Nome</label>
+                <input type="text" name="nome_adm" id="admin-nome" placeholder="Digite o nome">
+                <label for="admin-cpf">CPF</label>
+                <input type="text" name="cpf_adm" id="admin-cpf" placeholder="Digite o CPF">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </form>
+        </section>
+
+        <?php
+            $audit_page = isset($_GET['audit_page']) ? max(1, (int)$_GET['audit_page']) : 1;
+            $audit_limit = 5;
+            $audit_offset = ($audit_page - 1) * $audit_limit;
+            $audit_has_next = false;
+
+            $audit_items = [];
+            $stmt = $conn->prepare("SELECT a.acao, a.entidade, a.entidade_id, a.detalhes, a.data_acao, r.nome, r.apelido
+                FROM audit_log a
+                LEFT JOIN registro r ON r.id_registro = a.registro_id_registro
+                ORDER BY a.data_acao DESC
+                LIMIT ? OFFSET ?");
+            $audit_fetch = $audit_limit + 1;
+            $stmt->bind_param("ii", $audit_fetch, $audit_offset);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $audit_items[] = $row;
+            }
+            $stmt->close();
+
+            if (count($audit_items) > $audit_limit) {
+                $audit_has_next = true;
+                $audit_items = array_slice($audit_items, 0, $audit_limit);
+            }
+
+            $audit_total = 0;
+            $total_stmt = $conn->prepare("SELECT COUNT(*) as total FROM audit_log");
+            $total_stmt->execute();
+            $total_res = $total_stmt->get_result()->fetch_assoc();
+            $total_stmt->close();
+            $audit_total = $total_res ? (int)$total_res['total'] : 0;
+            $audit_pages = $audit_total > 0 ? (int)ceil($audit_total / $audit_limit) : 1;
+
+            function audit_tag_class($acao) {
+                $acao = strtolower(trim($acao));
+                if (in_array($acao, ['criar', 'login', 'aceitar'], true)) {
+                    return 'audit-tag--create';
+                }
+                if (in_array($acao, ['editar', 'finalizar'], true)) {
+                    return 'audit-tag--update';
+                }
+                if (in_array($acao, ['excluir', 'recusar'], true)) {
+                    return 'audit-tag--delete';
+                }
+                return '';
+            }
+
+            function audit_relative_time($datetime) {
+                if (!$datetime) {
+                    return '';
+                }
+                $timestamp = strtotime($datetime);
+                if (!$timestamp) {
+                    return '';
+                }
+                $diff = time() - $timestamp;
+                if ($diff < 60) {
+                    return 'agora';
+                }
+                if ($diff < 3600) {
+                    $mins = (int)floor($diff / 60);
+                    return "ha {$mins} min";
+                }
+                if ($diff < 86400) {
+                    $hours = (int)floor($diff / 3600);
+                    return "ha {$hours} h";
+                }
+                $days = (int)floor($diff / 86400);
+                return "ha {$days} d";
+            }
+        ?>
+
+        <section class="info-panel">
+            <div class="section-title">Atividade recente</div>
+            <p class="section-subtitle">Ultimas acoes registradas no sistema.</p>
+            <?php if (empty($audit_items)) { ?>
+                <div class="collab-empty">Nenhuma atividade registrada ainda.</div>
+            <?php } else { ?>
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Acao</th>
+                            <th>Entidade</th>
+                            <th>Usuario</th>
+                            <th>Data</th>
+                            <th>Detalhes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($audit_items as $item) {
+                            $acao = htmlspecialchars($item['acao'], ENT_QUOTES, 'UTF-8');
+                            $entidade = htmlspecialchars($item['entidade'], ENT_QUOTES, 'UTF-8');
+                            $entidade_id = $item['entidade_id'] !== null ? (int)$item['entidade_id'] : null;
+                            $detalhes = $item['detalhes'] ? htmlspecialchars($item['detalhes'], ENT_QUOTES, 'UTF-8') : '-';
+                            $nome = $item['apelido'] ?: $item['nome'];
+                            $nome = $nome ? htmlspecialchars($nome, ENT_QUOTES, 'UTF-8') : 'Sistema';
+                            $data_fmt = $item['data_acao'] ? date('d/m/Y H:i', strtotime($item['data_acao'])) : '';
+                            $data_rel = audit_relative_time($item['data_acao']);
+                            $tag_class = audit_tag_class($item['acao']);
+                            $titulo = $entidade_id !== null ? "{$entidade} #{$entidade_id}" : $entidade;
+                            echo "<tr>
+                                <td><span class='audit-tag {$tag_class}'>{$acao}</span></td>
+                                <td>{$titulo}</td>
+                                <td>{$nome}</td>
+                                <td>
+                                    <div class='audit-date'>{$data_rel}</div>
+                                    <div class='audit-date-sub'>{$data_fmt}</div>
+                                </td>
+                                <td><div class='audit-details' title='{$detalhes}'>{$detalhes}</div></td>
+                            </tr>";
+                        } ?>
+                    </tbody>
+                </table>
+                <div class="audit-pagination">
+                    <span class="audit-page-indicator">Pagina <?php echo $audit_page; ?> de <?php echo $audit_pages; ?></span>
+                    <?php if ($audit_page > 1) { ?>
+                        <a class="btn btn-ghost btn-small" href="?audit_page=<?php echo $audit_page - 1; ?>">Anterior</a>
+                    <?php } ?>
+                    <?php if ($audit_has_next) { ?>
+                        <a class="btn btn-primary btn-small" href="?audit_page=<?php echo $audit_page + 1; ?>">Proxima</a>
+                    <?php } ?>
+                </div>
+            <?php } ?>
+        </section>
 
         <form action="adm/processa_editar.php" method="POST" class="hidden" id="hidden2">
             <div class="title">Editar</div>
@@ -220,10 +367,14 @@
         
 
         <br><br>
-        <div class="tabela_adm" id="tabela_cadastros">
+        <div class="section-title">Usuarios cadastrados</div>
+        <div class="tabela_adm table-cards" id="tabela_cadastros">
             <table>
-                <tr><td>ID</td><td>NOME COMPLETO</td><td>CPF</td><td>ESTADO</td><td>CIDADE</td>
-                    <td>GÊNERO</td><td>CNPJ</td><td>EMAIL</td><td>TELEFONE</td><td>Serviços prestados</td><td>Função</td></tr>
+                <thead>
+                    <tr><td>ID</td><td>NOME COMPLETO</td><td>CPF</td><td>ESTADO</td><td>CIDADE</td>
+                        <td>GÊNERO</td><td>CNPJ</td><td>EMAIL</td><td>TELEFONE</td><td>Serviços prestados</td><td>Função</td><td>Acoes</td></tr>
+                </thead>
+                <tbody id="admin-table-body">
                 <?php
                     if (isset($_SESSION['nome_adm'])) {$nome_filtro = $_SESSION['nome_adm'];} else {$nome_filtro = "";}
                     if (isset($_SESSION['cpf_adm'])) {$cpf_filtro = $_SESSION['cpf_adm'];} else {$cpf_filtro = "";}
@@ -236,36 +387,109 @@
                     $cont = 0;
                     while ($linha = mysqli_fetch_array($resultado)) {
                         $cont++;
-                        echo "<tr><td>$linha[id_registro]</td><td>$linha[nome]</td><td>$linha[cpf]</td><td>$linha[estado]</td><td>$linha[cidade]</td><td>";
+                        echo "<tr><td data-label='ID'>$linha[id_registro]</td><td data-label='Nome'>$linha[nome]</td><td data-label='CPF'>$linha[cpf]</td><td data-label='Estado'>$linha[estado]</td><td data-label='Cidade'>$linha[cidade]</td><td data-label='Genero'>";
                         switch ($linha['sexo']) {case 'M': echo "Masculino"; break;    case 'F': echo "Feminino"; break;
                             case 'P': echo "Não falar"; break;    default: echo "Outro"; break; 
                         }   
-                        echo "</td><td>$linha[cnpj]</td><td>$linha[email]</td><td>$linha[telefone]</td><td>$linha[servicos_ok]</td><td>";
+                        echo "</td><td data-label='CNPJ'>$linha[cnpj]</td><td data-label='Email'>$linha[email]</td><td data-label='Telefone'>$linha[telefone]</td><td data-label='Servicos prestados'>$linha[servicos_ok]</td><td data-label='Funcao'>";
                         switch ($linha['funcao']) {case '1': echo "Administrador"; break;    case '2': echo "Colaborador"; break;
                             default: echo "Cliente"; break; 
                         }
-                        echo "</td></tr>";
+                                                echo "</td><td data-label='Acoes'>
+                                                                <div class='admin-table-actions'>
+                                                                        <button type='button' class='btn btn-small btn-ghost admin-edit' data-id='$linha[id_registro]'>Editar</button>
+                                                                        <button type='button' class='btn btn-small btn-ghost admin-delete' data-id='$linha[id_registro]'>Excluir</button>
+                                                                </div>
+                                                            </td></tr>";
                     }
                     $stmt->close();
                     unset ($_SESSION['nome_adm'], $_SESSION['cpf_adm']);
-                    echo "<tr><td>(X)</td><td>($cont) Resultados</td></tr>";
+                    echo "<tr><td data-label='ID'>(X)</td><td data-label='Nome'>($cont) Resultados</td></tr>";
                 ?>
+                </tbody>
             </table>
             <br><br><br><br>
         </div>
             <script>
-                let edit2 = document.getElementById('tabela_cadastros'); 
+                let edit2 = document.getElementById('tabela_cadastros');
                 <?php 
                     if (isset($_SESSION['exibir_tabela'])) {
                         echo "invisibleON('tabela_cadastros')";
                         unset($_SESSION['exibir_tabela']);
                     }
                 ?>
+
+                (function () {
+                    var nomeInput = document.getElementById('admin-nome');
+                    var cpfInput = document.getElementById('admin-cpf');
+                    var tableBody = document.getElementById('admin-table-body');
+                    var timer;
+
+                    function abrirEdicao(id) {
+                        var form = document.getElementById('hidden2');
+                        var input = document.getElementById('id_p');
+                        if (!form || !input) {
+                            return;
+                        }
+                        input.value = id;
+                        invisibleON('hidden2');
+                    }
+
+                    function bindRowActions() {
+                        var buttons = document.querySelectorAll('.admin-edit');
+                        buttons.forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                                abrirEdicao(btn.getAttribute('data-id'));
+                            });
+                        });
+
+                        var deleteButtons = document.querySelectorAll('.admin-delete');
+                        deleteButtons.forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                                var form = document.getElementById('hidden4');
+                                var input = document.getElementById('id_p2');
+                                if (!form || !input) {
+                                    return;
+                                }
+                                input.value = btn.getAttribute('data-id');
+                                invisibleON('hidden4');
+                            });
+                        });
+                    }
+
+                    function fetchResults() {
+                        if (!tableBody) {
+                            return;
+                        }
+                        var nome = nomeInput ? nomeInput.value.trim() : '';
+                        var cpf = cpfInput ? cpfInput.value.trim() : '';
+                        var url = 'adm/processa_pesquisa_ajax.php?nome=' + encodeURIComponent(nome) + '&cpf=' + encodeURIComponent(cpf);
+                        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                            .then(function (response) { return response.text(); })
+                            .then(function (html) {
+                                tableBody.innerHTML = html;
+                                bindRowActions();
+                            });
+                    }
+
+                    function scheduleFetch() {
+                        clearTimeout(timer);
+                        timer = setTimeout(fetchResults, 300);
+                    }
+
+                    if (nomeInput) {
+                        nomeInput.addEventListener('input', scheduleFetch);
+                    }
+                    if (cpfInput) {
+                        cpfInput.addEventListener('input', scheduleFetch);
+                    }
+                    bindRowActions();
+                })();
             </script>
     </body>
 
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 
 </html>

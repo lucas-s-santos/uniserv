@@ -14,31 +14,12 @@
             <meta name="description" content="Pagina inicial do Serviços Relâmpagos">
             <link rel="stylesheet" href="css/estrutura_geral.css">
 
-            <script>
-                function tirarAviso() {
-                    let edit = document.getElementById('aviso');
-                    if (edit) {
-                        edit.remove();
-                    }
-                }
-            </script>
             <title>Página principal</title>
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-        <?php 
-            if (isset($_SESSION['avisar'])) {
-                echo '<div class="notice" id="aviso">
-                    <div>
-                        <strong>Aviso:</strong> '.$_SESSION["avisar"].'
-                    </div>
-                    <button type="button" onclick="tirarAviso()">Entendi</button>
-                </div>';
-                unset($_SESSION['avisar']);
-            }
-        ?>
         <main class="page">
             <section class="hero">
                 <div class="hero-content">
@@ -96,6 +77,6 @@
     </body>
 
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 </html>
