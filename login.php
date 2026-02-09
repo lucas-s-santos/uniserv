@@ -26,16 +26,6 @@
         <link rel="stylesheet" href="css/estrutura_geral.css">
         <title>Página principal</title>
         <script>
-            function showFormNotice(message) {
-                let notice = document.getElementById("formNotice");
-                let text = document.getElementById("formNoticeText");
-                if (!notice || !text) {
-                    return;
-                }
-                text.textContent = message;
-                notice.style.display = "flex";
-                notice.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
             function testarSenha() {
                 return true;
             }
@@ -46,17 +36,6 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-        <?php
-            if (isset($_SESSION['avisar'])) {
-                $msg = htmlspecialchars($_SESSION['avisar'], ENT_QUOTES, 'UTF-8');
-                echo '<div class="notice" id="aviso"><div><strong>Aviso:</strong> ' . $msg . '</div></div>';
-                unset($_SESSION['avisar']);
-            }
-        ?>
-        <div class="notice notice--warn" id="formNotice" style="display: none;">
-            <div id="formNoticeText">Aviso</div>
-            <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
-        </div>
         <form name="form2" method="POST" action="processa_login.php" id="form2">
             <div class="fonte">
                 <div class="dentro form-card">
@@ -72,7 +51,7 @@
         </main>
     </body>
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 
 </html>

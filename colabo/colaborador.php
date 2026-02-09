@@ -28,6 +28,15 @@
             $comando_final = "UPDATE trabalhador_funcoes SET disponivel='1' WHERE id_trafun='$linha45[id_trafun]'";
         }
         mysqli_query($conn, $comando_final);
+        $_SESSION['avisar'] = "Disponibilidade atualizada com sucesso.";
+        $_SESSION['avisar_tipo'] = "success";
+        $redirectTo = strtok($_SERVER['REQUEST_URI'], '?');
+        $query = $_SERVER['QUERY_STRING'];
+        if (!empty($query)) {
+            $redirectTo .= '?' . $query;
+        }
+        header("Location: {$redirectTo}");
+        exit;
     }
 
 ?>
@@ -42,16 +51,13 @@
             <meta name="description" content="Pagina inicial do Serviços Relâmpagos">
             <link rel="stylesheet" href="../css/estrutura_geral.css">
 
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
             <script>
                 function showFormNotice(message) {
-                    let notice = document.getElementById("formNotice");
-                    let text = document.getElementById("formNoticeText");
-                    if (!notice || !text) {
-                        return;
+                    if (window.showToast) {
+                        showToast(message, "warn");
                     }
-                    text.textContent = message;
-                    notice.style.display = "flex";
-                    notice.scrollIntoView({ behavior: "smooth", block: "center" });
                 }
 
                 $("#id_p3").mask("0000000000");
@@ -109,10 +115,18 @@
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include '../menu.php'; ?>
         <div class="menu-spacer"></div>
-        <div class="notice notice--warn" id="formNotice" style="display: none;">
-            <div id="formNoticeText">Aviso</div>
-            <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
-        </div>
+
+        <section class="page-header">
+            <div>
+                <div class="page-kicker">Painel colaborador</div>
+                <h1 class="page-title">Acompanhe seus ganhos e chamados</h1>
+                <p class="page-subtitle">Gerencie disponibilidade, acompanhe o historico e mantenha seus dados atualizados.</p>
+            </div>
+            <div class="page-actions">
+                <button type="button" class="btn btn-accent" onclick="invisibleON('newclass')">Inscrever em uma funcao</button>
+                <a class="btn btn-ghost" href="../historico.php?qm=2">Historico</a>
+            </div>
+        </section>
 
         <?php
             $mes_selecionado = isset($_GET['mes']) ? (int)$_GET['mes'] : (int)date('m');
@@ -126,6 +140,7 @@
 
             $status_finalizado = SERVICO_STATUS_FINALIZADO;
             $status_pendente = SERVICO_STATUS_PENDENTE;
+            $status_ativo = SERVICO_STATUS_ATIVO;
 
             $stmt = $conn->prepare("SELECT IFNULL(SUM(valor_atual * (tempo_servico / 60)), 0) as total_bruto,
                 COUNT(id_servico) as total_servicos, IFNULL(AVG(avaliacao), 0) as media_avaliacao
@@ -136,17 +151,31 @@
             $dashboard = $stmt->get_result()->fetch_assoc();
             $stmt->close();
 
-            $stmt = $conn->prepare("SELECT COUNT(*) as pendentes FROM servico WHERE id_trabalhador = ? AND ativo = ?");
-            $stmt->bind_param("ii", $_SESSION['id_acesso'], $status_pendente);
+            $count_pendente = 0;
+            $count_ativo = 0;
+            $count_finalizado = 0;
+            $stmt = $conn->prepare("SELECT ativo, COUNT(*) as total FROM servico WHERE id_trabalhador = ? GROUP BY ativo");
+            $stmt->bind_param("i", $_SESSION['id_acesso']);
             $stmt->execute();
-            $pendentes = $stmt->get_result()->fetch_assoc();
+            $result_counts = $stmt->get_result();
+            while ($row = $result_counts->fetch_assoc()) {
+                $status = (int)$row['ativo'];
+                $total = (int)$row['total'];
+                if ($status === $status_pendente) {
+                    $count_pendente = $total;
+                } elseif ($status === $status_ativo) {
+                    $count_ativo = $total;
+                } elseif ($status === $status_finalizado) {
+                    $count_finalizado = $total;
+                }
+            }
             $stmt->close();
 
             $total_bruto = (float)$dashboard['total_bruto'];
             $total_liquido = $total_bruto * 0.9;
             $total_servicos = (int)$dashboard['total_servicos'];
             $media_avaliacao = (float)$dashboard['media_avaliacao'];
-            $total_pendentes = (int)$pendentes['pendentes'];
+            $total_pendentes = $count_pendente;
 
             $grafico_meses = [];
             $grafico_valores = [];
@@ -206,6 +235,21 @@
             </div>
             <div class="dashboard-cards">
                 <div class="dashboard-card">
+                    <div class="dashboard-label">Chamados abertos</div>
+                    <div class="dashboard-value"><?php echo $count_pendente; ?></div>
+                    <div class="dashboard-sub">Aguardando resposta</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Em andamento</div>
+                    <div class="dashboard-value"><?php echo $count_ativo; ?></div>
+                    <div class="dashboard-sub">Servicos ativos</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">Concluidos</div>
+                    <div class="dashboard-value"><?php echo $count_finalizado; ?></div>
+                    <div class="dashboard-sub">Historico total</div>
+                </div>
+                <div class="dashboard-card">
                     <div class="dashboard-label">Ganhos do mes (liquido)</div>
                     <div class="dashboard-value">R$ <?php echo number_format($total_liquido, 2, ',', '.'); ?></div>
                     <div class="dashboard-sub">Bruto: R$ <?php echo number_format($total_bruto, 2, ',', '.'); ?></div>
@@ -230,20 +274,7 @@
             </div>
             <div class="dashboard-chart">
                 <div class="dashboard-chart__title">Ultimos 3 meses</div>
-                <div class="dashboard-chart__bars">
-                    <?php
-                        foreach ($grafico_meses as $index => $label) {
-                            $valor = $grafico_valores[$index];
-                            $altura = $max_valor > 0 ? (int)round(($valor / $max_valor) * 100) : 0;
-                            $valor_fmt = number_format($valor, 2, ',', '.');
-                            echo "<div class='chart-bar'>
-                                <div class='chart-bar__fill' style='height: {$altura}%;'></div>
-                                <div class='chart-bar__label'>{$label}</div>
-                                <div class='chart-bar__value'>R$ {$valor_fmt}</div>
-                            </div>";
-                        }
-                    ?>
-                </div>
+                <canvas id="servicesChart" height="240"></canvas>
             </div>
         </section>
         
@@ -270,10 +301,13 @@
             <div class='hidden_sub' style='text-align: center'><input type='submit' value='Confirmar' onclick='return testeCandidatar()'> <input type='reset' value='Cancelar' onclick="invisibleON('newclass')"></div>
         </form>
 
-        <div class="title">Informação</div>
-        <div class='botaolist'><a onclick="invisibleON('newclass')">Inscrever se em uma função</a> <a href='../historico.php?qm=2'>Historico de serviços</a> </div>
-        <div class="texto">Sua cidade cadastrada define onde voce aparece para clientes. Atualize no perfil se necessario.</div>
-        <div class="subtitle">Seus serviços</div>
+        <section class="info-panel">
+            <div class="section-title">Informacoes importantes</div>
+            <p class="section-subtitle">Sua cidade cadastrada define onde voce aparece para clientes. Atualize no perfil se necessario.</p>
+        </section>
+        <div class="section-title">Seus servicos</div>
+
+        <section class="service-list">
 
         <?php
             $analise_funcoes2= "SELECT B.nome_func as 'funcao', A.certificado, A.valor_hora, A.disponivel, A.id_trafun
@@ -285,13 +319,26 @@
                     $certificado_safe = htmlspecialchars($linha13['certificado'], ENT_QUOTES, 'UTF-8');
                     $certificado_html = "<img class='cert-thumb' src='{$certificado_safe}' data-full='{$certificado_safe}' alt='Certificado'>";
                 }
-                echo "<div class='caixa'> <form action='#' method='POST'><input  type='hidden' value='".$linha13['id_trafun']."' name='atualizar_disponivel'>
-                <input class='off' type='submit' style='width:100px; height: 30px; background: ";
-                if ($linha13['disponivel'] == 0) {echo "red";} else {echo "green";}
-                echo ";' value='STATUS'>";
-                echo "<b>$linha13[funcao]</b> / Valor por hora: $linha13[valor_hora] / Seu certificado: $certificado_html</form></div>";
+                $status_label = $linha13['disponivel'] == 1 ? 'Disponivel' : 'Indisponivel';
+                $status_class = $linha13['disponivel'] == 1 ? 'btn-accent' : 'btn-ghost';
+                echo "<div class='service-card'>
+                    <div class='service-card__header'>
+                        <div>
+                            <div class='service-card__title'>".$linha13['funcao']."</div>
+                            <div class='service-card__meta'>
+                                <span>Valor por hora: ".$linha13['valor_hora']."</span>
+                                <span>Certificado: {$certificado_html}</span>
+                            </div>
+                        </div>
+                        <form action='#' method='POST'>
+                            <input type='hidden' value='".$linha13['id_trafun']."' name='atualizar_disponivel'>
+                            <button type='submit' class='btn btn-small {$status_class}'>".$status_label."</button>
+                        </form>
+                    </div>
+                </div>";
             }
         ?>
+        </section>
         <div class="lightbox" id="lightbox">
             <div class="lightbox__content">
                 <img id="lightboxImage" src="" alt="Certificado">
@@ -299,6 +346,57 @@
             </div>
         </div>
         <?php include 'convites_update.php'; ?>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var ctx = document.getElementById('servicesChart');
+                if (!ctx || !window.Chart) {
+                    return;
+                }
+                var labels = <?php echo json_encode($grafico_meses, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                var valores = <?php echo json_encode($grafico_valores, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Ganhos (R$)',
+                            data: valores,
+                            backgroundColor: 'rgba(79, 124, 255, 0.65)',
+                            borderColor: 'rgba(79, 124, 255, 0.9)',
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) {
+                                        return 'R$ ' + value;
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return 'R$ ' + context.formattedValue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
 
         <script>
             document.addEventListener('click', function (event) {
@@ -337,6 +435,6 @@
     </body>
 
     <footer class="footer">
-        <object data="../pe.html" height="45px" width="100%"></object>
+        <?php include '../pe.html'; ?>
     </footer>
 </html>

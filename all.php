@@ -1,17 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-    <head>
-        <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-            <meta name="author" content="Gabriel Nepomuceno de Almeida dos Santos">
-            <meta http-equiv="Cache-Control" content="no-cache" />
-            <!--<meta http-equiv="refresh" content="30">-->
-            <meta name="keywords" content="HTML, CSS">
-            <meta name="description" content="Pagina inicial do fast services">
-            <script src="js/jquery.min.js"></script>
-            <script src="js/bootstrap.min.js"></script>
-            <script src="js/jquery.mask.min.js"></script>
-            <script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Gabriel Nepomuceno de Almeida dos Santos">
+<meta http-equiv="Cache-Control" content="no-cache" />
+<meta name="keywords" content="HTML, CSS">
+<meta name="description" content="Pagina inicial do fast services">
+<script src="js/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/jquery.mask.min.js"></script>
+<script>
                 $("#cpf").mask("000.000.000-00");
                 $("#cpf2").mask("000.000.000-00");
                 $("#telefone").mask("(00)0 0000-0000");
@@ -126,5 +122,3 @@
                 //Obs: essa função IsNumber não é minha!
 
             </script>
-            <title>Menu</title>
-    </head>

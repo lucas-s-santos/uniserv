@@ -4,6 +4,7 @@
     }
     $_SESSION['atualizar'] = "nao";
     include_once __DIR__ . '/conexao.php';
+    include_once __DIR__ . '/status.php';
     if (isset($_SESSION['id_acesso'])) {
 
         $comando_testar = "SELECT * FROM registro WHERE id_registro = '$_SESSION[id_acesso]' LIMIT 1";
@@ -46,6 +47,29 @@
         $baseUrl = '/';
     }
 
+    $toastScript = $baseUrl === '/' ? '/js/toast.js' : $baseUrl . '/js/toast.js';
+
+    $toastMessage = null;
+    $toastType = null;
+    if (isset($_SESSION['avisar'])) {
+        $toastMessage = $_SESSION['avisar'];
+    }
+    if (isset($_SESSION['avisar_tipo'])) {
+        $toastType = $_SESSION['avisar_tipo'];
+    }
+    unset($_SESSION['avisar'], $_SESSION['avisar_tipo']);
+
+    if ($toastMessage !== null && $toastType === null) {
+        $toastMessageText = strtolower(strip_tags($toastMessage));
+        if (preg_match('/sucesso|bem sucedido|bem-sucedido|criada com sucesso|atribuido/', $toastMessageText)) {
+            $toastType = 'success';
+        } elseif (preg_match('/erro|falha|falhou|invalido|incorreta|restrito|precisa|ocupado/', $toastMessageText)) {
+            $toastType = 'error';
+        } else {
+            $toastType = 'info';
+        }
+    }
+
     function render_menu_item($href, $label, $className = '') {
         global $baseUrl;
         $path = $baseUrl === '/' ? '/' . ltrim($href, '/') : $baseUrl . '/' . ltrim($href, '/');
@@ -61,6 +85,7 @@
     ];
 
     $notif_count = 0;
+    $pending_count = 0;
     if ($isLogged) {
         $stmt = $conn->prepare("SELECT COUNT(*) as total FROM notificacoes WHERE registro_id_registro = ? AND lida = 0");
         $stmt->bind_param("i", $_SESSION['id_acesso']);
@@ -68,7 +93,18 @@
         $res_notif = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         $notif_count = $res_notif ? (int)$res_notif['total'] : 0;
+
+        if ($role === 2) {
+            $status_pendente = SERVICO_STATUS_PENDENTE;
+            $stmt = $conn->prepare("SELECT COUNT(*) as total FROM servico WHERE id_trabalhador = ? AND ativo = ?");
+            $stmt->bind_param("ii", $_SESSION['id_acesso'], $status_pendente);
+            $stmt->execute();
+            $res_pending = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            $pending_count = $res_pending ? (int)$res_pending['total'] : 0;
+        }
     }
+    $alert_count = $notif_count + $pending_count;
 
     if ($isLogged) {
         if ($role === 1) {
@@ -86,6 +122,7 @@
         }
     }
 ?>
+<script src="<?php echo htmlspecialchars($toastScript, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
     var basePath = "<?php echo $baseUrl; ?>";
     document.addEventListener('DOMContentLoaded', function () {
@@ -107,6 +144,15 @@
         });
     });
 </script>
+
+<?php
+    if ($toastMessage !== null) {
+        $toastPlain = trim(preg_replace('/\s+/', ' ', strip_tags($toastMessage)));
+        $toastPayload = json_encode($toastPlain, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $toastTypePayload = json_encode($toastType, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        echo "<script>document.addEventListener('DOMContentLoaded', function () { if (window.showToast) { showToast({$toastPayload}, {$toastTypePayload}); } });</script>";
+    }
+?>
 
 <?php
     if (isset($atualizar) && $atualizar == "sim") {
@@ -164,10 +210,10 @@
                     if ($isLogged) {
                         $apelido = htmlspecialchars($_SESSION['apelido'], ENT_QUOTES, 'UTF-8');
                         $notifLink = $baseUrl === '/' ? '/notificacoes.php' : $baseUrl . '/notificacoes.php';
-                        $notifBadge = $notif_count > 0 ? "<span class='notif-badge'>{$notif_count}</span>" : "";
-                        if ($notif_count > 0) {
-                            echo "<a href='".htmlspecialchars($notifLink, ENT_QUOTES, 'UTF-8')."' target='_parent' class='notif-link notif-link--pulse' aria-label='Notificacoes'><span class='notif-icon'>&#128276;</span>{$notifBadge}</a>";
-                        }
+                        $notifBadge = $alert_count > 0 ? "<span class='notif-badge'>{$alert_count}</span>" : "";
+                        $notifClass = $alert_count > 0 ? 'notif-link notif-link--pulse' : 'notif-link';
+                        $notifLabel = $alert_count > 0 ? "Notificacoes ({$alert_count})" : 'Notificacoes';
+                        echo "<a href='".htmlspecialchars($notifLink, ENT_QUOTES, 'UTF-8')."' target='_parent' class='{$notifClass}' aria-label='".htmlspecialchars($notifLabel, ENT_QUOTES, 'UTF-8')."' title='".htmlspecialchars($notifLabel, ENT_QUOTES, 'UTF-8')."'><span class='notif-icon'>&#128276;</span>{$notifBadge}</a>";
                         $perfilLink = $baseUrl === '/' ? '/perfil.php' : $baseUrl . '/perfil.php';
                         $historicoLink = $baseUrl === '/' ? '/historico.php' : $baseUrl . '/historico.php';
                         $sairLink = $baseUrl === '/' ? '/sair.php' : $baseUrl . '/sair.php';

@@ -1,5 +1,8 @@
 <?php
-    include_once("conexao.php");
+    include_once "includes/bootstrap.php";
+    include_once "includes/auth.php";
+    require_login('login.php', 'Voce precisa estar logado para acessar esta area.');
+    require_role([1], 'login.php', 'Acesso restrito para administradores.');
 ?>
 
 <?php
@@ -54,5 +57,7 @@
 ?>
 
 <script>
-    alert("<?php echo $result; ?>");
+    if (window.showToast) {
+        showToast("<?php echo $result; ?>", "info");
+    }
 </script>

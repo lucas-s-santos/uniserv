@@ -38,14 +38,9 @@
         <title>Página principal</title>
     <script>
         function showFormNotice(message) {
-            let notice = document.getElementById("formNotice");
-            let text = document.getElementById("formNoticeText");
-            if (!notice || !text) {
-                return;
+            if (window.showToast) {
+                showToast(message, "warn");
             }
-            text.textContent = message;
-            notice.style.display = "flex";
-            notice.scrollIntoView({ behavior: "smooth", block: "center" });
         }
         function validarDados() {
             let formEDI = document.getElementById("editar");
@@ -63,10 +58,6 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-        <div class="notice notice--warn" id="formNotice" style="display: none;">
-            <div id="formNoticeText">Aviso</div>
-            <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
-        </div>
         <?php
             echo "<form action='adm/processa_editar_perfil.php' method='POST' enctype='multipart/form-data' class='hidden_two form-card' id='editar' style='text-align: left;'>
                 <input type='hidden' name='acao' value='$_SESSION[id_acesso]'>
@@ -160,7 +151,7 @@
     </body>
 
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 
 </html>

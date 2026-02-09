@@ -5,6 +5,12 @@
     $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
     require_login('login.php', 'Voce precisa estar logado para acessar esta area.');
     require_role([1, 3], 'login.php', 'Acesso restrito para clientes.');
+    if (isset($_GET['funcao'], $_GET['cidade'], $_GET['estado'], $_GET['endereco'])) {
+        $_SESSION['funcao_preferida'] = (int)$_GET['funcao'];
+        $_SESSION['cidade_preferida'] = trim(strip_tags($_GET['cidade']));
+        $_SESSION['estado'] = trim(strip_tags($_GET['estado']));
+        $_SESSION['endereco'] = trim(strip_tags($_GET['endereco']));
+    }
     if (isset($_GET['ta'])) {
         $id_trafun = (int)$_GET['ta'];
     } else {
@@ -38,8 +44,9 @@
 
         if ($erro == 'nao') {
             $status_pendente = SERVICO_STATUS_PENDENTE;
+            $etapa_pendente = SERVICO_ETAPA_PENDENTE;
             $comando_chamar = "INSERT INTO servico(registro_id_registro, id_trabalhador, funcoes_id_funcoes, endereco, valor_atual, tempo_servico, avaliacao, ativo, comentario, data_2) 
-            VALUES ('$_POST[id_qmchamou]', '$_POST[id_chamado]', '$_POST[funcao]', '$_POST[endereco]', '$_POST[valor_atual]', '0', '0', '$status_pendente', '', '$data_hj')";
+            VALUES ('$_POST[id_qmchamou]', '$_POST[id_chamado]', '$_POST[funcao]', '$_POST[endereco]', '$_POST[valor_atual]', '0', '0', '$status_pendente', '$etapa_pendente', '', '$data_hj')";
             $joga_no_banco = mysqli_query($conn, $comando_chamar);
                 $novo_servico_id = mysqli_insert_id($conn);
                 if ($novo_servico_id) {
@@ -168,6 +175,6 @@
     </body>
 
     <footer class="footer">
-        <object data="pe.html" height="45px" width="100%"></object>
+        <?php include 'pe.html'; ?>
     </footer>
 </html>

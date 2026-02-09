@@ -22,6 +22,8 @@
         $comando_editar = "UPDATE registro SET cidade='$_POST[cidade_mudar]' WHERE id_registro='$_SESSION[id_acesso]'";
         unset($_POST['cidade_mudar']);
         mysqli_query($conn, $comando_editar);
+        $_SESSION['avisar'] = "Cidade atualizada com sucesso.";
+        $_SESSION['avisar_tipo'] = "success";
     }
     if (isset($_POST['id_servico'])) {
         $id_servico = (int)$_POST['id_servico'];
@@ -31,18 +33,21 @@
 
         if (!$status_atual) {
             $_SESSION['avisar'] = "Servico nao encontrado.";
+            $_SESSION['avisar_tipo'] = "error";
         } else {
             $status_atual = (int)$status_atual['ativo'];
             $status_pendente = SERVICO_STATUS_PENDENTE;
             if ($status_atual !== $status_pendente) {
                 $_SESSION['avisar'] = "Este chamado ja foi respondido.";
+                $_SESSION['avisar_tipo'] = "warn";
             } else {
                 if ($_POST['escolha'] == 'sim') {
                     $status_aceito = SERVICO_STATUS_ATIVO;
-                    $comando_editar = "UPDATE servico SET ativo='$status_aceito' WHERE id_servico='$id_servico'";
+                    $etapa_orcamento = SERVICO_ETAPA_ORCAMENTO;
+                    $comando_editar = "UPDATE servico SET ativo='$status_aceito', status_etapa='$etapa_orcamento' WHERE id_servico='$id_servico'";
                 } else {
                     $status_recusado = SERVICO_STATUS_RECUSADO;
-                    $comando_editar = "UPDATE servico SET ativo='$status_recusado', comentario='recusedservice#43242' WHERE id_servico='$id_servico'";
+                    $comando_editar = "UPDATE servico SET ativo='$status_recusado', status_etapa=NULL, comentario='recusedservice#43242' WHERE id_servico='$id_servico'";
                 }
                 mysqli_query($conn, $comando_editar);
                 $acao = $_POST['escolha'] == 'sim' ? 'aceitar' : 'recusar';
@@ -55,6 +60,13 @@
                 $stmt->execute();
                 $stmt->close();
                 if ($_POST['escolha'] == 'sim') {
+                    $_SESSION['avisar'] = "Chamado aceito com sucesso.";
+                    $_SESSION['avisar_tipo'] = "success";
+                } else {
+                    $_SESSION['avisar'] = "Chamado recusado.";
+                    $_SESSION['avisar_tipo'] = "warn";
+                }
+                if ($_POST['escolha'] == 'sim') {
                     echo "<script> parent.window.location.href = '../servicos.php';</script>";
                 }
             }
@@ -64,10 +76,6 @@
 ?>
 
 <div class="collab-calls">
-    <div class="notice notice--warn" id="formNotice" style="display: none;">
-        <div id="formNoticeText">Aviso</div>
-        <button type="button" onclick="this.parentElement.style.display='none';">Fechar</button>
-    </div>
     <div class="collab-calls__header">
         <div>
             <div class="subtitle">Chamados pendentes</div>
