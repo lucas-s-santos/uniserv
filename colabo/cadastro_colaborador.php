@@ -136,6 +136,36 @@
                     ?>
                 }
 
+                function preencherLocalizacao(latId, lngId, statusId) {
+                    if (!navigator.geolocation) {
+                        showFormNotice("Navegador nao suporta geolocalizacao.");
+                        return;
+                    }
+                    var statusEl = document.getElementById(statusId);
+                    if (statusEl) {
+                        statusEl.textContent = "Buscando localizacao...";
+                    }
+                    navigator.geolocation.getCurrentPosition(function (pos) {
+                        var latEl = document.getElementById(latId);
+                        var lngEl = document.getElementById(lngId);
+                        if (latEl && lngEl) {
+                            latEl.value = pos.coords.latitude.toFixed(7);
+                            lngEl.value = pos.coords.longitude.toFixed(7);
+                        }
+                        if (statusEl) {
+                            statusEl.textContent = "Localizacao capturada.";
+                        }
+                        if (window.showToast) {
+                            showToast("Localizacao capturada.", "success");
+                        }
+                    }, function () {
+                        if (statusEl) {
+                            statusEl.textContent = "Nao foi possivel obter localizacao.";
+                        }
+                        showFormNotice("Nao foi possivel obter localizacao.");
+                    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+                }
+
             </script>
     </head>
     
@@ -151,15 +181,37 @@
                         $comando_testar = "SELECT * FROM registro WHERE id_registro = '$_SESSION[id_acesso]' LIMIT 1";
                         $procure_o_teste = mysqli_query($conn, $comando_testar);
                         $resultado7 = mysqli_fetch_assoc($procure_o_teste);
+                        $pix_tipo_val = isset($resultado7['pix_tipo']) ? $resultado7['pix_tipo'] : '';
+                        $pix_chave_val = isset($resultado7['pix_chave']) ? htmlspecialchars($resultado7['pix_chave'], ENT_QUOTES, 'UTF-8') : '';
                         echo '<div class="title" style="color: yellow">Colaborador</div>
                             <input type="hidden" name="id_pessoal" value="'.$_SESSION["id_acesso"].'">
                             <div class="campo-texto"> <label>E-mail (Obrigatorio)</label> <input type="text" name="email" value="'.$resultado7["email"].'" placeholder="Necessario para contato" required> </div>
                             <div class="campo-texto"> <label>Cidade</label> <input type="text" name="cidade" value="'.$resultado7["cidade"].'" placeholder="Digite sua cidade" required> </div>
+                            <div class="campo-texto full">
+                                <label>Localizacao (opcional)</label>
+                                <div class="button-group">
+                                    <input type="button" value="Usar minha localizacao" onclick="preencherLocalizacao('colaLat', 'colaLng', 'colaLocalStatus')">
+                                </div>
+                                <div class="texto" id="colaLocalStatus"></div>
+                            </div>
+                            <div class="campo-texto">
+                                <label>Tipo de PIX</label>
+                                <select name="pix_tipo">
+                                    <option value=""'.($pix_tipo_val === '' ? ' selected' : '').'>Escolha</option>
+                                    <option value="cpf"'.($pix_tipo_val === 'cpf' ? ' selected' : '').'>CPF</option>
+                                    <option value="telefone"'.($pix_tipo_val === 'telefone' ? ' selected' : '').'>Telefone</option>
+                                    <option value="email"'.($pix_tipo_val === 'email' ? ' selected' : '').'>E-mail</option>
+                                    <option value="aleatoria"'.($pix_tipo_val === 'aleatoria' ? ' selected' : '').'>Chave aleatoria</option>
+                                </select>
+                            </div>
+                            <div class="campo-texto"> <label>Chave PIX</label> <input type="text" name="pix_chave" value="'.$pix_chave_val.'" placeholder="Digite sua chave PIX"> </div>
                             <div class="campo-texto"> <label>Cnpj (Se tiver)</label> <input type="text" name="cnpj" placeholder="É opcional"> </div>
                             <div class="campo-texto"> <label>Telefone(opcional)</label> <input type="text" id="telefone" name="telefone" value="'.$resultado7["telefone"].'"placeholder="É opcional, mas facilita comunicação"> </div>
                             <div class="campo-texto"> <label>Descrição</label> <input type="text" name="descricao" value="'.$resultado7["descricao"].'" placeholder="Escreva um pouco sobre você!"> </div>';
 
                     ?>
+                    <input type="hidden" name="latitude" id="colaLat" value="">
+                    <input type="hidden" name="longitude" id="colaLng" value="">
                     <div class="botao"><input type="reset" value="Limpar"><input type="submit" value="Fazer inscrição" onclick="return analiseInformacoes()"></div>
                     <br>
                     <div class="campo-texto">Ao clicar em fazer inscrição você concorda com os termos e condições do site</div><div class='botaolist2'><p onclick="invisibleON('hidden8')">Clique aqui para ler!</p></div>

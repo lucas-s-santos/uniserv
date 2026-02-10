@@ -16,6 +16,8 @@
             <meta name="keywords" content="HTML, CSS">
             <meta name="description" content="Pagina inicial do Serviços Relâmpagos">
             <link rel="stylesheet" href="css/estrutura_geral.css">
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
             <title>Página principal</title>
     </head>
     

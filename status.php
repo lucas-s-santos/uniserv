@@ -2,6 +2,7 @@
     const SERVICO_STATUS_FINALIZADO = 0;
     const SERVICO_STATUS_ATIVO = 1;
     const SERVICO_STATUS_PENDENTE = 2;
+    const SERVICO_STATUS_AGUARDANDO_PAGAMENTO = 3;
     const SERVICO_STATUS_RECUSADO = -1;
     const SERVICO_STATUS_CANCELADO = -2;
 
@@ -17,6 +18,8 @@
                 return 'Em andamento';
             case SERVICO_STATUS_PENDENTE:
                 return 'Em pedido';
+            case SERVICO_STATUS_AGUARDANDO_PAGAMENTO:
+                return 'Aguardando pagamento';
             case SERVICO_STATUS_FINALIZADO:
                 return 'Finalizado';
             case SERVICO_STATUS_RECUSADO:
@@ -33,6 +36,8 @@
             case SERVICO_STATUS_ATIVO:
                 return 'status-badge--active';
             case SERVICO_STATUS_PENDENTE:
+                return 'status-badge--pending';
+            case SERVICO_STATUS_AGUARDANDO_PAGAMENTO:
                 return 'status-badge--pending';
             case SERVICO_STATUS_FINALIZADO:
                 return 'status-badge--done';
@@ -65,6 +70,8 @@
         switch ((int)$status) {
             case SERVICO_STATUS_ATIVO:
                 return SERVICO_ETAPA_EXECUCAO;
+            case SERVICO_STATUS_AGUARDANDO_PAGAMENTO:
+                return SERVICO_ETAPA_FINALIZADO;
             case SERVICO_STATUS_FINALIZADO:
                 return SERVICO_ETAPA_FINALIZADO;
             case SERVICO_STATUS_PENDENTE:
@@ -103,6 +110,9 @@
             return in_array($toStatus, [SERVICO_STATUS_ATIVO, SERVICO_STATUS_RECUSADO, SERVICO_STATUS_CANCELADO], true);
         }
         if ($fromStatus === SERVICO_STATUS_ATIVO) {
+            return in_array($toStatus, [SERVICO_STATUS_FINALIZADO, SERVICO_STATUS_CANCELADO, SERVICO_STATUS_AGUARDANDO_PAGAMENTO], true);
+        }
+        if ($fromStatus === SERVICO_STATUS_AGUARDANDO_PAGAMENTO) {
             return in_array($toStatus, [SERVICO_STATUS_FINALIZADO, SERVICO_STATUS_CANCELADO], true);
         }
         return false;

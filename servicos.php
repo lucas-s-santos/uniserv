@@ -14,7 +14,10 @@
     if (isset($_POST['acao'], $_POST['id_servico'])) {
         $id_servico = (int)$_POST['id_servico'];
         $acao = trim($_POST['acao']);
-        $buscar_status = "SELECT ativo, status_etapa, funcoes_id_funcoes, id_trabalhador FROM servico WHERE id_servico='$id_servico' LIMIT 1";
+        $buscar_status = "SELECT s.ativo, s.status_etapa, s.funcoes_id_funcoes, s.id_trabalhador, s.registro_id_registro, s.valor_atual,
+            s.pagamento_status, s.pagamento_comprovante, r.pix_chave, r.pix_tipo, r.aceita_pix, r.aceita_dinheiro, r.aceita_cartao_presencial
+            FROM servico s INNER JOIN registro r ON r.id_registro = s.id_trabalhador
+            WHERE s.id_servico='$id_servico' LIMIT 1";
         $resultado_status = mysqli_query($conn, $buscar_status);
         $status_atual = mysqli_fetch_assoc($resultado_status);
 
@@ -24,7 +27,17 @@
             exit;
         }
 
-        if ((int)$status_atual['id_trabalhador'] !== (int)$_SESSION['id_acesso']) {
+        $is_trabalhador = (int)$status_atual['id_trabalhador'] === (int)$_SESSION['id_acesso'];
+        $is_cliente = (int)$status_atual['registro_id_registro'] === (int)$_SESSION['id_acesso'];
+        $acoes_trabalhador = ['etapa', 'finalizar', 'confirmar_pagamento'];
+        $acoes_cliente = ['pagar', 'pagar_presencial'];
+
+        if (in_array($acao, $acoes_trabalhador, true) && !$is_trabalhador) {
+            $_SESSION['avisar'] = "Acesso restrito para este servico.";
+            header('location: servicos.php');
+            exit;
+        }
+        if (in_array($acao, $acoes_cliente, true) && !$is_cliente) {
             $_SESSION['avisar'] = "Acesso restrito para este servico.";
             header('location: servicos.php');
             exit;
@@ -34,6 +47,132 @@
         $etapa_atual = $status_atual['status_etapa'] !== null
             ? (int)$status_atual['status_etapa']
             : servico_etapa_from_status($status_atual_num);
+
+        if ($acao === 'pagar') {
+            if ($status_atual_num !== SERVICO_STATUS_AGUARDANDO_PAGAMENTO) {
+                $_SESSION['avisar'] = "Este servico nao aceita pagamento no status atual.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            if ((int)$status_atual['pagamento_status'] !== 0) {
+                $_SESSION['avisar'] = "Pagamento ja enviado ou confirmado.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            $comprovante = isset($_FILES['comprovante']) ? $_FILES['comprovante'] : null;
+            if (!$comprovante || $comprovante['error'] !== UPLOAD_ERR_OK) {
+                $_SESSION['avisar'] = "Envie o comprovante do pagamento.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            $permitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'application/pdf' => 'pdf'];
+            if (!isset($permitidos[$comprovante['type']])) {
+                $_SESSION['avisar'] = "Formato invalido. Use JPG, PNG ou PDF.";
+                $_SESSION['avisar_tipo'] = "error";
+                header('location: servicos.php');
+                exit;
+            }
+            $upload_dir = __DIR__ . '/image/comprovantes';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0775, true);
+            }
+            $base_path = 'image/comprovantes';
+            $nome_comprovante = $base_path . '/comprovante_' . $id_servico . '_' . time() . '.' . $permitidos[$comprovante['type']];
+            if (!move_uploaded_file($comprovante['tmp_name'], $upload_dir . '/' . basename($nome_comprovante))) {
+                $_SESSION['avisar'] = "Falha ao salvar o comprovante.";
+                $_SESSION['avisar_tipo'] = "error";
+                header('location: servicos.php');
+                exit;
+            }
+            $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            $stmt->bind_param("si", $nome_comprovante, $id_servico);
+            $stmt->execute();
+            $stmt->close();
+            audit_log($conn, 'pagamento_enviado', 'servico', $id_servico, 'Cliente enviou comprovante');
+            $mensagem = 'Cliente enviou comprovante de pagamento.';
+            $link = 'servicos.php';
+            $stmt = $conn->prepare("INSERT INTO notificacoes (registro_id_registro, mensagem, link) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $status_atual['id_trabalhador'], $mensagem, $link);
+            $stmt->execute();
+            $stmt->close();
+            $_SESSION['avisar'] = "Comprovante enviado. Aguarde confirmacao.";
+            $_SESSION['avisar_tipo'] = "success";
+            header('location: servicos.php');
+            exit;
+        }
+
+        if ($acao === 'pagar_presencial') {
+            if ($status_atual_num !== SERVICO_STATUS_AGUARDANDO_PAGAMENTO) {
+                $_SESSION['avisar'] = "Este servico nao aceita pagamento no status atual.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            if ((int)$status_atual['pagamento_status'] !== 0) {
+                $_SESSION['avisar'] = "Pagamento ja enviado ou confirmado.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            $aceita_dinheiro = isset($status_atual['aceita_dinheiro']) ? (int)$status_atual['aceita_dinheiro'] === 1 : false;
+            $aceita_cartao_presencial = isset($status_atual['aceita_cartao_presencial']) ? (int)$status_atual['aceita_cartao_presencial'] === 1 : false;
+            if (!$aceita_dinheiro && !$aceita_cartao_presencial) {
+                $_SESSION['avisar'] = "Pagamento presencial nao permitido para este colaborador.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            $comprovante = 'presencial';
+            $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            $stmt->bind_param("si", $comprovante, $id_servico);
+            $stmt->execute();
+            $stmt->close();
+            audit_log($conn, 'pagamento_presencial', 'servico', $id_servico, 'Cliente confirmou pagamento presencial');
+            $mensagem = 'Cliente confirmou pagamento presencial.';
+            $link = 'servicos.php';
+            $stmt = $conn->prepare("INSERT INTO notificacoes (registro_id_registro, mensagem, link) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $status_atual['id_trabalhador'], $mensagem, $link);
+            $stmt->execute();
+            $stmt->close();
+            $_SESSION['avisar'] = "Pagamento presencial informado. Aguarde confirmacao.";
+            $_SESSION['avisar_tipo'] = "success";
+            header('location: servicos.php');
+            exit;
+        }
+
+        if ($acao === 'confirmar_pagamento') {
+            if ($status_atual_num !== SERVICO_STATUS_AGUARDANDO_PAGAMENTO) {
+                $_SESSION['avisar'] = "Este servico nao esta aguardando pagamento.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            if ((int)$status_atual['pagamento_status'] !== 1) {
+                $_SESSION['avisar'] = "Nenhum comprovante pendente.";
+                $_SESSION['avisar_tipo'] = "warn";
+                header('location: servicos.php');
+                exit;
+            }
+            $status_finalizado = SERVICO_STATUS_FINALIZADO;
+            $stmt = $conn->prepare("UPDATE servico SET ativo=?, pagamento_status=2, pagamento_data=NOW() WHERE id_servico=?");
+            $stmt->bind_param("ii", $status_finalizado, $id_servico);
+            $stmt->execute();
+            $stmt->close();
+            audit_log($conn, 'pagamento_confirmado', 'servico', $id_servico, 'Colaborador confirmou pagamento');
+            $mensagem = 'Pagamento confirmado pelo colaborador.';
+            $link = 'historico.php';
+            $stmt = $conn->prepare("INSERT INTO notificacoes (registro_id_registro, mensagem, link) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $status_atual['registro_id_registro'], $mensagem, $link);
+            $stmt->execute();
+            $stmt->close();
+            $_SESSION['avisar'] = "Pagamento confirmado. Servico concluido.";
+            $_SESSION['avisar_tipo'] = "success";
+            header('location: servicos.php');
+            exit;
+        }
 
         if ($acao === 'etapa') {
             if ($status_atual_num !== SERVICO_STATUS_ATIVO) {
@@ -60,6 +199,23 @@
 
         if ($status_atual_num !== SERVICO_STATUS_ATIVO) {
             $_SESSION['avisar'] = "Nao e possivel finalizar este servico no status atual.";
+            header('location: servicos.php');
+            exit;
+        }
+
+        $pix_chave = trim((string)$status_atual['pix_chave']);
+        $aceita_pix = isset($status_atual['aceita_pix']) ? (int)$status_atual['aceita_pix'] === 1 : true;
+        $aceita_dinheiro = isset($status_atual['aceita_dinheiro']) ? (int)$status_atual['aceita_dinheiro'] === 1 : false;
+        $aceita_cartao_presencial = isset($status_atual['aceita_cartao_presencial']) ? (int)$status_atual['aceita_cartao_presencial'] === 1 : false;
+        if (!$aceita_pix && !$aceita_dinheiro && !$aceita_cartao_presencial) {
+            $_SESSION['avisar'] = "Configure ao menos um metodo de pagamento antes de finalizar o servico.";
+            $_SESSION['avisar_tipo'] = "warn";
+            header('location: servicos.php');
+            exit;
+        }
+        if ($aceita_pix && $pix_chave === '') {
+            $_SESSION['avisar'] = "Informe sua chave PIX antes de finalizar o servico.";
+            $_SESSION['avisar_tipo'] = "warn";
             header('location: servicos.php');
             exit;
         }
@@ -132,15 +288,29 @@
             $stmt->close();
         }
 
-        $status_finalizado = SERVICO_STATUS_FINALIZADO;
+        $status_finalizado = SERVICO_STATUS_AGUARDANDO_PAGAMENTO;
         $etapa_finalizado = SERVICO_ETAPA_FINALIZADO;
-        $tempo = mysqli_real_escape_string($conn, $_POST['tempo']);
-        $stmt = $conn->prepare("UPDATE servico SET ativo=?, status_etapa=?, tempo_servico=?, endereco='Finalizado', foto_antes=?, foto_depois=? WHERE id_servico=?");
-        $stmt->bind_param("iiissi", $status_finalizado, $etapa_finalizado, $tempo, $nome_antes, $nome_depois, $id_servico);
+        $tempo = isset($_POST['tempo']) ? (int)$_POST['tempo'] : 0;
+        if ($tempo <= 0) {
+            $_SESSION['avisar'] = "Informe um tempo valido em minutos.";
+            $_SESSION['avisar_tipo'] = "warn";
+            header('location: servicos.php');
+            exit;
+        }
+        $valor_hora = (float)$status_atual['valor_atual'];
+        $valor_final = round(($tempo / 60) * $valor_hora, 2);
+        $stmt = $conn->prepare("UPDATE servico SET ativo=?, status_etapa=?, tempo_servico=?, valor_final=?, endereco='Finalizado', foto_antes=?, foto_depois=?, pagamento_status=0 WHERE id_servico=?");
+        $stmt->bind_param("iiidssi", $status_finalizado, $etapa_finalizado, $tempo, $valor_final, $nome_antes, $nome_depois, $id_servico);
         $stmt->execute();
         $stmt->close();
         audit_log($conn, 'finalizar', 'servico', $id_servico, "Tempo: $tempo");
-        $_SESSION['avisar'] = "Servico finalizado com sucesso.";
+        $mensagem = 'Servico finalizado. Pagamento pendente.';
+        $link = 'servicos.php';
+        $stmt = $conn->prepare("INSERT INTO notificacoes (registro_id_registro, mensagem, link) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $status_atual['registro_id_registro'], $mensagem, $link);
+        $stmt->execute();
+        $stmt->close();
+        $_SESSION['avisar'] = "Servico finalizado. Aguardando pagamento do cliente.";
         $_SESSION['avisar_tipo'] = "success";
         header('location: index.php');
         exit;
