@@ -11,11 +11,19 @@
         exit;
     }
     include_once("../conexao.php");
-    include_once ("../all.php");
     include_once ("../audit.php");
     include_once ("../status.php");
     $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
     $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
+    $stmt = $conn->prepare("SELECT pix_chave, aceita_pix, aceita_dinheiro, aceita_cartao_presencial FROM registro WHERE id_registro = ? LIMIT 1");
+    $stmt->bind_param("i", $_SESSION['id_acesso']);
+    $stmt->execute();
+    $pix_row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $pix_chave_atual = isset($pix_row['pix_chave']) ? trim($pix_row['pix_chave']) : '';
+    $aceita_pix = isset($pix_row['aceita_pix']) ? (int)$pix_row['aceita_pix'] === 1 : true;
+    $aceita_dinheiro = isset($pix_row['aceita_dinheiro']) ? (int)$pix_row['aceita_dinheiro'] === 1 : false;
+    $aceita_cartao_presencial = isset($pix_row['aceita_cartao_presencial']) ? (int)$pix_row['aceita_cartao_presencial'] === 1 : false;
 
     if (isset($_POST['atualizar_disponivel'])) {
         $numero_servico = $_POST['atualizar_disponivel'];
@@ -38,6 +46,8 @@
         header("Location: {$redirectTo}");
         exit;
     }
+
+    include_once ("../all.php");
 
 ?>
 
@@ -127,6 +137,12 @@
                 <a class="btn btn-ghost" href="../historico.php?qm=2">Historico</a>
             </div>
         </section>
+        <?php if ((!$aceita_pix || $pix_chave_atual === '') && !$aceita_dinheiro && !$aceita_cartao_presencial) { ?>
+            <div class="notice notice--warn" style="margin-bottom: 16px;">
+                Voce ainda nao configurou uma forma de pagamento. Atualize em Pagamento.
+                <a class="btn btn-ghost btn-small" href="../pagamento_config.php">Atualizar PIX</a>
+            </div>
+        <?php } ?>
 
         <?php
             $mes_selecionado = isset($_GET['mes']) ? (int)$_GET['mes'] : (int)date('m');
@@ -141,6 +157,7 @@
             $status_finalizado = SERVICO_STATUS_FINALIZADO;
             $status_pendente = SERVICO_STATUS_PENDENTE;
             $status_ativo = SERVICO_STATUS_ATIVO;
+            $status_aguardando_pagamento = SERVICO_STATUS_AGUARDANDO_PAGAMENTO;
 
             $stmt = $conn->prepare("SELECT IFNULL(SUM(valor_atual * (tempo_servico / 60)), 0) as total_bruto,
                 COUNT(id_servico) as total_servicos, IFNULL(AVG(avaliacao), 0) as media_avaliacao
@@ -163,8 +180,8 @@
                 $total = (int)$row['total'];
                 if ($status === $status_pendente) {
                     $count_pendente = $total;
-                } elseif ($status === $status_ativo) {
-                    $count_ativo = $total;
+                } elseif ($status === $status_ativo || $status === $status_aguardando_pagamento) {
+                    $count_ativo += $total;
                 } elseif ($status === $status_finalizado) {
                     $count_finalizado = $total;
                 }
@@ -176,6 +193,11 @@
             $total_servicos = (int)$dashboard['total_servicos'];
             $media_avaliacao = (float)$dashboard['media_avaliacao'];
             $total_pendentes = $count_pendente;
+            $metodos = [];
+            if ($aceita_pix) { $metodos[] = 'PIX'; }
+            if ($aceita_dinheiro) { $metodos[] = 'Dinheiro'; }
+            if ($aceita_cartao_presencial) { $metodos[] = 'Cartao presencial'; }
+            $metodos_label = $metodos ? implode(' · ', $metodos) : 'Pagamento nao configurado';
 
             $grafico_meses = [];
             $grafico_valores = [];
@@ -201,6 +223,27 @@
             }
             $stmt->close();
         ?>
+
+        <section class="collab-quick">
+            <div class="collab-quick__card">
+                <div class="collab-quick__kicker">Pagamento</div>
+                <div class="collab-quick__title"><?php echo htmlspecialchars($metodos_label, ENT_QUOTES, 'UTF-8'); ?></div>
+                <p class="collab-quick__text">Configure PIX, dinheiro ou cartao presencial para receber sem atrasos.</p>
+                <a class="btn btn-primary btn-small" href="../pagamento_config.php">Ajustar pagamento</a>
+            </div>
+            <div class="collab-quick__card">
+                <div class="collab-quick__kicker">Chamados</div>
+                <div class="collab-quick__title"><?php echo $count_pendente; ?> pendentes</div>
+                <p class="collab-quick__text">Responda rapido para ganhar prioridade nos proximos pedidos.</p>
+                <a class="btn btn-ghost btn-small" href="#convites">Ver pendentes</a>
+            </div>
+            <div class="collab-quick__card">
+                <div class="collab-quick__kicker">Servicos</div>
+                <div class="collab-quick__title"><?php echo $count_ativo; ?> em andamento</div>
+                <p class="collab-quick__text">Finalize e acompanhe seus ganhos em tempo real.</p>
+                <a class="btn btn-ghost btn-small" href="../servicos.php">Ver servicos</a>
+            </div>
+        </section>
 
         <section class="dashboard">
             <div class="dashboard-header">
@@ -345,6 +388,7 @@
                 <button type="button" class="lightbox__close" id="lightboxClose">Fechar</button>
             </div>
         </div>
+        <div id="convites"></div>
         <?php include 'convites_update.php'; ?>
 
         <script>

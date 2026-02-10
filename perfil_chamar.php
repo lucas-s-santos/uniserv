@@ -45,7 +45,7 @@
         if ($erro == 'nao') {
             $status_pendente = SERVICO_STATUS_PENDENTE;
             $etapa_pendente = SERVICO_ETAPA_PENDENTE;
-            $comando_chamar = "INSERT INTO servico(registro_id_registro, id_trabalhador, funcoes_id_funcoes, endereco, valor_atual, tempo_servico, avaliacao, ativo, comentario, data_2) 
+            $comando_chamar = "INSERT INTO servico(registro_id_registro, id_trabalhador, funcoes_id_funcoes, endereco, valor_atual, tempo_servico, avaliacao, ativo, status_etapa, comentario, data_2) 
             VALUES ('$_POST[id_qmchamou]', '$_POST[id_chamado]', '$_POST[funcao]', '$_POST[endereco]', '$_POST[valor_atual]', '0', '0', '$status_pendente', '$etapa_pendente', '', '$data_hj')";
             $joga_no_banco = mysqli_query($conn, $comando_chamar);
                 $novo_servico_id = mysqli_insert_id($conn);
@@ -64,8 +64,12 @@
             header("Location: index.php");
         }
     }
-    $analise_servico = "SELECT C.nome 'nome_trabalhador', C.descricao 'descricao', C.data_ani 'data_aniversario', C.sexo 'genero', B.nome_func 'funcao', A.valor_hora 'valor_hora',
-    A.registro_id_registro 'id_trabalhador', A.certificado 'certificado', A.funcoes_id_funcoes 'id_funcao', A.id_trafun 'id_trafun' FROM trabalhador_funcoes A INNER JOIN
+    $analise_servico = "SELECT C.nome 'nome_trabalhador', C.descricao 'descricao', C.data_ani 'data_aniversario', C.sexo 'genero',
+    C.pix_tipo 'pix_tipo', C.pix_chave 'pix_chave', C.aceita_pix 'aceita_pix', C.aceita_dinheiro 'aceita_dinheiro',
+    C.aceita_cartao_presencial 'aceita_cartao_presencial', C.mensagem_pagamento 'mensagem_pagamento', C.foto 'foto',
+    C.latitude 'latitude', C.longitude 'longitude',
+    B.nome_func 'funcao', A.valor_hora 'valor_hora', A.registro_id_registro 'id_trabalhador',
+    A.certificado 'certificado', A.funcoes_id_funcoes 'id_funcao', A.id_trafun 'id_trafun' FROM trabalhador_funcoes A INNER JOIN
     registro C ON C.id_registro = A.registro_id_registro INNER JOIN funcoes B ON B.id_funcoes = A.funcoes_id_funcoes WHERE id_trafun = ? LIMIT 1";
     $stmt = $conn->prepare($analise_servico);
     $stmt->bind_param("i", $id_trafun);
@@ -108,6 +112,36 @@
     switch ($resultado_trafun['genero']) {case 'M': $genero = "Masculino"; break; case 'F': $genero = "Feminino"; break;
         case 'P': $genero = "Se optou por não falar"; break; default: $genero = "Outro"; break; 
     }
+
+    $colab_nome = htmlspecialchars($resultado_trafun['nome_trabalhador'], ENT_QUOTES, 'UTF-8');
+    $colab_desc = htmlspecialchars($resultado_trafun['descricao'], ENT_QUOTES, 'UTF-8');
+    $colab_funcao = htmlspecialchars($resultado_trafun['funcao'], ENT_QUOTES, 'UTF-8');
+    $colab_valor = number_format((float)$resultado_trafun['valor_hora'], 2, ',', '.');
+    $colab_genero = htmlspecialchars($genero, ENT_QUOTES, 'UTF-8');
+    $colab_idade = htmlspecialchars($idade, ENT_QUOTES, 'UTF-8');
+    $cliente_nome = htmlspecialchars($resultado_registro2['apelido'], ENT_QUOTES, 'UTF-8');
+    $cliente_endereco = htmlspecialchars($_SESSION['endereco'], ENT_QUOTES, 'UTF-8');
+    $cliente_cidade = htmlspecialchars($_SESSION['cidade_preferida'], ENT_QUOTES, 'UTF-8');
+    $cliente_estado = htmlspecialchars($resultado_registro2['estado'], ENT_QUOTES, 'UTF-8');
+    $cliente_foto = !empty($resultado_registro2['foto']) ? $resultado_registro2['foto'] : 'image/logoservicore.jpg';
+    $cliente_foto_safe = htmlspecialchars($cliente_foto, ENT_QUOTES, 'UTF-8');
+    $pix_tipo = htmlspecialchars((string)$resultado_trafun['pix_tipo'], ENT_QUOTES, 'UTF-8');
+    $pix_chave = htmlspecialchars((string)$resultado_trafun['pix_chave'], ENT_QUOTES, 'UTF-8');
+    $aceita_pix = (int)$resultado_trafun['aceita_pix'] === 1;
+    $aceita_dinheiro = (int)$resultado_trafun['aceita_dinheiro'] === 1;
+    $aceita_cartao = (int)$resultado_trafun['aceita_cartao_presencial'] === 1;
+    $mensagem_pagamento = trim((string)$resultado_trafun['mensagem_pagamento']);
+    $metodos = [];
+    if ($aceita_pix) { $metodos[] = 'PIX'; }
+    if ($aceita_dinheiro) { $metodos[] = 'Dinheiro'; }
+    if ($aceita_cartao) { $metodos[] = 'Cartao presencial'; }
+    $metodos_label = $metodos ? implode(' · ', $metodos) : 'Pagamento nao configurado';
+    $pix_info = $pix_chave !== '' ? ($pix_tipo ? "$pix_tipo: $pix_chave" : $pix_chave) : 'Chave PIX nao informada';
+    $colab_foto = !empty($resultado_trafun['foto']) ? $resultado_trafun['foto'] : 'image/logoservicore.jpg';
+    $colab_foto_safe = htmlspecialchars($colab_foto, ENT_QUOTES, 'UTF-8');
+    $colab_lat = $resultado_trafun['latitude'] !== null ? (float)$resultado_trafun['latitude'] : null;
+    $colab_lng = $resultado_trafun['longitude'] !== null ? (float)$resultado_trafun['longitude'] : null;
+    $is_top = is_numeric($media_avaliacoes) && (float)$media_avaliacoes >= 4.7 && (int)$total_avaliacoes >= 5;
 ?>
 
 <!DOCTYPE html>
@@ -119,6 +153,8 @@
             <meta name="keywords" content="HTML, CSS">
             <meta name="description" content="Pagina inicial do Serviços Relâmpagos">
             <link rel="stylesheet" href="css/estrutura_geral.css">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
             <script>
                 function alterarPagina (K) {
@@ -131,47 +167,169 @@
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-            <table class="final" style="text-align: left">
-                <tr><td colspan="2" id="id1" style="text-align: center"><div class="subtitle">Colaborador</div></td></tr>
-                <?php 
-                echo "<tr><td id='id1'>Nome:</td><td id='id2'>$resultado_trafun[nome_trabalhador]</td></tr>
-                <tr><td id='id1'>Idade:</td><td id='id2'>$idade</td></tr>
-                <tr><td id='id1'>Gênero:</td><td id='id2'>$genero</td></tr>
-                <tr><td id='id1'>Descrição:</td><td id='id2'>$resultado_trafun[descricao]</td></tr>
-                <tr><td id='id1'>Função:</td><td id='id2'>$resultado_trafun[funcao]</td></tr>
-                <tr><td id='id1'>Preço:</td><td id='id2'>R$ $resultado_trafun[valor_hora] por hora</td></tr>
-                <tr><td id='id1'>Avaliação:</td><td id='id2'>$media_avaliacoes/5 Estrelas</td></tr>
-                <tr><td id='id1'>Comentários:</td><td id='id2'><select name='enfeite' id='id2'>";
-                $comando_avaliacoes = "SELECT comentario as 'coment' FROM servico WHERE id_trabalhador = '$resultado_trafun[id_trabalhador]'
-                 AND ativo='0' AND avaliacao>0 ORDER BY id_servico DESC LIMIT 20";
-                $joga_no_banco_2 = mysqli_query($conn, $comando_avaliacoes);
-                while ($linha24 = mysqli_fetch_assoc($joga_no_banco_2)) {
-                    echo "<option>$linha24[coment]";
-                }
-                echo "</select></td></tr>
-            </table>
-            <table class='final' style='text-align: left'>
-                <tr><td colspan='2' id='id1' style='text-align: center'><div class='subtitle'>Você</div></td></tr>
-                <tr><td id='id1'>Nome:</td><td id='id2'>$resultado_registro2[apelido]</td></tr>
-                <tr><td id='id1'>Endereço:</td><td id='id2'>$_SESSION[endereco]</td></tr>
-                <tr><td id='id1'>Cidade:</td><td id='id2'>$_SESSION[cidade_preferida]</td></tr>
-                <tr><td id='id1'>Estado:</td><td id='id2'>$resultado_registro2[estado]</td></tr>
-            </table>";
-            echo "
-            <br>
-                <form action='#' method='POST'>
-                    <input type='hidden' name='id_qmchamou' value='$_SESSION[id_acesso]'> <input type='hidden' name='id_chamado' value='$resultado_trafun[id_trabalhador]'>
-                    <input type='hidden' name='endereco' value='$_SESSION[endereco]'> <input type='hidden' name='valor_atual' value='$resultado_trafun[valor_hora]'>
-                    <input type='hidden' name='funcao' value='$resultado_trafun[id_funcao]'>
-                    <input type='hidden' name='formnum' value='4'>";
-                ?>
-                     
-                    <div class='botao'>
-                        <input type='reset' value='Mudar endereço' onclick='alterarPagina(2)'> <input type='submit' value='CHAMAR'>
+        <main class="page profile-call">
+            <section class="profile-hero">
+                <div class="profile-card profile-card--accent">
+                    <div class="profile-card__header">
+                        <div class="profile-identity">
+                            <div class="profile-avatar">
+                                <img src="<?php echo $colab_foto_safe; ?>" alt="Foto do colaborador">
+                                <?php if ($is_top) { ?>
+                                    <span class="profile-badge">Top avaliacao</span>
+                                <?php } ?>
+                            </div>
+                            <div>
+                                <div class="profile-kicker">Colaborador</div>
+                                <div class="profile-title"><?php echo $colab_nome; ?></div>
+                                <div class="profile-subtitle"><?php echo $colab_funcao; ?></div>
+                            </div>
+                        </div>
+                        <div class="profile-price">R$ <?php echo $colab_valor; ?>/hora</div>
                     </div>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <span class="profile-stat__label">Idade</span>
+                            <span class="profile-stat__value"><?php echo $colab_idade; ?></span>
+                        </div>
+                        <div class="profile-stat">
+                            <span class="profile-stat__label">Genero</span>
+                            <span class="profile-stat__value"><?php echo $colab_genero; ?></span>
+                        </div>
+                        <div class="profile-stat">
+                            <span class="profile-stat__label">Avaliacao</span>
+                            <span class="profile-stat__value"><?php echo htmlspecialchars($media_avaliacoes, ENT_QUOTES, 'UTF-8'); ?>/5</span>
+                        </div>
+                    </div>
+                    <div class="profile-description"><?php echo $colab_desc ?: 'Sem descricao cadastrada.'; ?></div>
+                    <div class="profile-badges">
+                        <span class="chip"><?php echo htmlspecialchars($metodos_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <?php if ($aceita_pix && $pix_chave !== '') { ?>
+                            <span class="chip chip--muted">PIX: <?php echo $pix_info; ?></span>
+                        <?php } ?>
+                    </div>
+                    <?php if ($mensagem_pagamento !== '') { ?>
+                        <div class="notice" style="margin-top: 12px;">
+                            <?php echo htmlspecialchars($mensagem_pagamento, ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                    <?php } ?>
+                    <div class="profile-comments">
+                        <div class="profile-comments__label">Comentarios recentes</div>
+                        <select name="enfeite" class="profile-comments__select">
+                            <?php
+                                $tem_coment = false;
+                                $comando_avaliacoes = "SELECT comentario as 'coment' FROM servico WHERE id_trabalhador = '$resultado_trafun[id_trabalhador]'
+                                 AND ativo='0' AND avaliacao>0 ORDER BY id_servico DESC LIMIT 20";
+                                $joga_no_banco_2 = mysqli_query($conn, $comando_avaliacoes);
+                                while ($linha24 = mysqli_fetch_assoc($joga_no_banco_2)) {
+                                    $tem_coment = true;
+                                    $coment_safe = htmlspecialchars($linha24['coment'], ENT_QUOTES, 'UTF-8');
+                                    echo "<option>{$coment_safe}</option>";
+                                }
+                                if (!$tem_coment) {
+                                    echo "<option>Sem comentarios ainda</option>";
+                                }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="profile-map" id="colabMap" data-lat="<?php echo $colab_lat !== null ? $colab_lat : ''; ?>" data-lng="<?php echo $colab_lng !== null ? $colab_lng : ''; ?>">
+                        <div class="profile-map__placeholder">Localizacao aproximada do colaborador.</div>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <div class="profile-card__header">
+                        <div class="profile-identity">
+                            <div class="profile-avatar profile-avatar--sm">
+                                <img src="<?php echo $cliente_foto_safe; ?>" alt="Sua foto">
+                            </div>
+                            <div>
+                                <div class="profile-kicker">Voce</div>
+                                <div class="profile-title"><?php echo $cliente_nome; ?></div>
+                                <div class="profile-subtitle">Confirme os dados do chamado</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-list">
+                        <div><span>Endereco</span><strong><?php echo $cliente_endereco; ?></strong></div>
+                        <div><span>Cidade</span><strong><?php echo $cliente_cidade; ?></strong></div>
+                        <div><span>Estado</span><strong><?php echo $cliente_estado; ?></strong></div>
+                    </div>
+                    <form action="#" method="POST" class="profile-actions">
+                        <input type="hidden" name="id_qmchamou" value="<?php echo (int)$_SESSION['id_acesso']; ?>">
+                        <input type="hidden" name="id_chamado" value="<?php echo (int)$resultado_trafun['id_trabalhador']; ?>">
+                        <input type="hidden" name="endereco" value="<?php echo $cliente_endereco; ?>">
+                        <input type="hidden" name="valor_atual" value="<?php echo (float)$resultado_trafun['valor_hora']; ?>">
+                        <input type="hidden" name="funcao" value="<?php echo (int)$resultado_trafun['id_funcao']; ?>">
+                        <input type="hidden" name="formnum" value="4">
+                        <button type="reset" class="btn btn-ghost" onclick="alterarPagina(2)">Mudar endereco</button>
+                        <button type="submit" class="btn btn-primary">Chamar agora</button>
+                    </form>
+                </div>
+            </section>
+            <div class="mobile-cta">
+                <div>
+                    <div class="mobile-cta__label">R$ <?php echo $colab_valor; ?>/hora</div>
+                    <div class="mobile-cta__title"><?php echo $colab_funcao; ?></div>
+                </div>
+                <form action="#" method="POST" class="mobile-cta__form">
+                    <input type="hidden" name="id_qmchamou" value="<?php echo (int)$_SESSION['id_acesso']; ?>">
+                    <input type="hidden" name="id_chamado" value="<?php echo (int)$resultado_trafun['id_trabalhador']; ?>">
+                    <input type="hidden" name="endereco" value="<?php echo $cliente_endereco; ?>">
+                    <input type="hidden" name="valor_atual" value="<?php echo (float)$resultado_trafun['valor_hora']; ?>">
+                    <input type="hidden" name="funcao" value="<?php echo (int)$resultado_trafun['id_funcao']; ?>">
+                    <input type="hidden" name="formnum" value="4">
+                    <button type="submit" class="btn btn-primary">Chamar</button>
                 </form>
             </div>
-            <div style="width:100%; height:50px"></div>
+        </main>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var mapEl = document.getElementById('colabMap');
+                if (mapEl && window.L) {
+                    var lat = parseFloat(mapEl.dataset.lat);
+                    var lng = parseFloat(mapEl.dataset.lng);
+                    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+                        mapEl.innerHTML = '';
+                        var map = L.map(mapEl, { scrollWheelZoom: false, zoomControl: false, attributionControl: false });
+                        var isLight = document.body.classList.contains('theme-light');
+                        var tileUrl = isLight
+                            ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                        L.tileLayer(tileUrl, {
+                            maxZoom: 18
+                        }).addTo(map);
+                        map.setView([lat, lng], 13);
+                        L.circleMarker([lat, lng], {
+                            radius: 7,
+                            color: '#1f6feb',
+                            fillColor: '#1f6feb',
+                            fillOpacity: 0.9
+                        }).addTo(map);
+                    }
+                }
+
+                var cta = document.querySelector('.mobile-cta');
+                if (!cta) {
+                    return;
+                }
+                var pulseTimer;
+                function triggerCtaPulse() {
+                    if (window.innerWidth > 720) {
+                        return;
+                    }
+                    cta.classList.remove('mobile-cta--pulse');
+                    void cta.offsetWidth;
+                    cta.classList.add('mobile-cta--pulse');
+                    clearTimeout(pulseTimer);
+                    pulseTimer = setTimeout(function () {
+                        cta.classList.remove('mobile-cta--pulse');
+                    }, 1200);
+                }
+                window.addEventListener('scroll', function () {
+                    triggerCtaPulse();
+                }, { passive: true });
+            });
+        </script>
     </body>
 
     <footer class="footer">

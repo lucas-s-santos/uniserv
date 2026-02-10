@@ -14,6 +14,23 @@
         $senha = $_POST['senha'];
         $genero = trim($_POST['genero']);
         $data = trim($_POST['data_ani']);
+        $latitude = null;
+        $longitude = null;
+        if (isset($_POST['latitude'], $_POST['longitude'])) {
+            $lat_raw = str_replace(',', '.', trim($_POST['latitude']));
+            $lng_raw = str_replace(',', '.', trim($_POST['longitude']));
+            if ($lat_raw !== '' && $lng_raw !== '' && is_numeric($lat_raw) && is_numeric($lng_raw)) {
+                $latitude = (float)$lat_raw;
+                $longitude = (float)$lng_raw;
+            }
+        }
+        if ($latitude === null || $longitude === null) {
+            $geo = geocode_nominatim($cidade . ', ' . $estado . ', Brasil');
+            if ($geo) {
+                $latitude = $geo['lat'];
+                $longitude = $geo['lng'];
+            }
+        }
 
         $erro = 'nao';
 
@@ -59,26 +76,51 @@
             $descricao = ' ';
             $atualizar = '0';
 
-            $stmt = $conn->prepare("INSERT INTO registro(nome, apelido, cpf, estado, cidade, sexo, cnpj, email, telefone, senha, servicos_ok, data_ani, funcao, descricao, atualizar)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param(
-                "sssssssssssssss",
-                $nome,
-                $apelido,
-                $cpf,
-                $estado,
-                $cidade,
-                $genero,
-                $cnpj,
-                $email,
-                $telefone,
-                $senha_hash,
-                $servicos_ok,
-                $data,
-                $funcao,
-                $descricao,
-                $atualizar
-            );
+            if ($latitude !== null && $longitude !== null) {
+                $stmt = $conn->prepare("INSERT INTO registro(nome, apelido, cpf, estado, cidade, latitude, longitude, sexo, cnpj, email, telefone, senha, servicos_ok, data_ani, funcao, descricao, atualizar)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param(
+                    "sssssddssssssssss",
+                    $nome,
+                    $apelido,
+                    $cpf,
+                    $estado,
+                    $cidade,
+                    $latitude,
+                    $longitude,
+                    $genero,
+                    $cnpj,
+                    $email,
+                    $telefone,
+                    $senha_hash,
+                    $servicos_ok,
+                    $data,
+                    $funcao,
+                    $descricao,
+                    $atualizar
+                );
+            } else {
+                $stmt = $conn->prepare("INSERT INTO registro(nome, apelido, cpf, estado, cidade, sexo, cnpj, email, telefone, senha, servicos_ok, data_ani, funcao, descricao, atualizar)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param(
+                    "sssssssssssssss",
+                    $nome,
+                    $apelido,
+                    $cpf,
+                    $estado,
+                    $cidade,
+                    $genero,
+                    $cnpj,
+                    $email,
+                    $telefone,
+                    $senha_hash,
+                    $servicos_ok,
+                    $data,
+                    $funcao,
+                    $descricao,
+                    $atualizar
+                );
+            }
             $stmt->execute();
             $novo_id = $stmt->insert_id;
             $stmt->close();

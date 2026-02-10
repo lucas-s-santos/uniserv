@@ -78,6 +78,35 @@
                     }
                     return true;                    
                 }
+                function preencherLocalizacao(latId, lngId, statusId) {
+                    if (!navigator.geolocation) {
+                        showFormNotice("Navegador nao suporta geolocalizacao.");
+                        return;
+                    }
+                    var statusEl = document.getElementById(statusId);
+                    if (statusEl) {
+                        statusEl.textContent = "Buscando localizacao...";
+                    }
+                    navigator.geolocation.getCurrentPosition(function (pos) {
+                        var latEl = document.getElementById(latId);
+                        var lngEl = document.getElementById(lngId);
+                        if (latEl && lngEl) {
+                            latEl.value = pos.coords.latitude.toFixed(7);
+                            lngEl.value = pos.coords.longitude.toFixed(7);
+                        }
+                        if (statusEl) {
+                            statusEl.textContent = "Localizacao capturada.";
+                        }
+                        if (window.showToast) {
+                            showToast("Localizacao capturada.", "success");
+                        }
+                    }, function () {
+                        if (statusEl) {
+                            statusEl.textContent = "Nao foi possivel obter localizacao.";
+                        }
+                        showFormNotice("Nao foi possivel obter localizacao.");
+                    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+                }
             </script>
     </head>
     
@@ -127,6 +156,13 @@
                         </div>
                         <div class="campo-texto"> <label>CPF </label> <input type="text" name="cpf" id="cpf" placeholder="Digite o cpf" required> </div>
                         <div class="campo-texto"> <label>Cidade </label> <input type="text" name="cidade" placeholder="Digite sua cidade" required> </div>
+                        <div class="campo-texto full">
+                            <label>Localizacao (opcional)</label>
+                            <div class="button-group">
+                                <input type="button" value="Usar minha localizacao" onclick="preencherLocalizacao('cadLat', 'cadLng', 'cadLocalStatus')">
+                            </div>
+                            <div class="texto" id="cadLocalStatus"></div>
+                        </div>
                         <div class="campo-texto"> <label>E-mail(opcional)</label> <input type="text" name="email" placeholder="É opcional, mas pode te ajudar"> </div>
                         <div class="campo-texto"> <label>Telefone(opcional) </label> <input type="text" id="telefone" name="telefone" placeholder="É opcional, mas facilita comunicação"> </div>
                         <div class="campo-texto"> <label>Data de nascimento </label> <input type="date" id="data_ani" name="data_ani" required> </div>
@@ -143,6 +179,8 @@
                         <div class="campo-texto"> <label>Repita a senha </label> <input type="password" name="confsenha" placeholder="Digite a senha novamente" required> </div>
                     </div>
                     <div class="button-group"><input type="reset" value="Limpar"><input type="submit" value="Cadastrar" onclick="return validarDados()"></div>
+                    <input type="hidden" name="latitude" id="cadLat" value="">
+                    <input type="hidden" name="longitude" id="cadLng" value="">
                     <br><br>
                 </div>
             </div>

@@ -51,6 +51,35 @@
             }
             return true;
         }
+        function preencherLocalizacao(latId, lngId, statusId) {
+            if (!navigator.geolocation) {
+                showFormNotice("Navegador nao suporta geolocalizacao.");
+                return;
+            }
+            var statusEl = document.getElementById(statusId);
+            if (statusEl) {
+                statusEl.textContent = "Buscando localizacao...";
+            }
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                var latEl = document.getElementById(latId);
+                var lngEl = document.getElementById(lngId);
+                if (latEl && lngEl) {
+                    latEl.value = pos.coords.latitude.toFixed(7);
+                    lngEl.value = pos.coords.longitude.toFixed(7);
+                }
+                if (statusEl) {
+                    statusEl.textContent = "Localizacao capturada.";
+                }
+                if (window.showToast) {
+                    showToast("Localizacao capturada.", "success");
+                }
+            }, function () {
+                if (statusEl) {
+                    statusEl.textContent = "Nao foi possivel obter localizacao.";
+                }
+                showFormNotice("Nao foi possivel obter localizacao.");
+            }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+        }
     </script>
     </head>
     
@@ -101,6 +130,11 @@
                 <input type='email' name='email' placeholder='Escreva seu e-mail se quiser' value='$resultado[email]' required> <br>
                 <label>Cidade:</label>
                 <input type='text' name='cidade' placeholder='Digite sua cidade' value='$resultado[cidade]' required> <br>
+                <label>Localizacao (opcional):</label>
+                <div class='button-group'>
+                    <input type='button' value='Usar minha localizacao' onclick=\"preencherLocalizacao('perfilLat', 'perfilLng', 'perfilLocalStatus')\">
+                </div>
+                <div class='texto' id='perfilLocalStatus'></div>
                 <label>Telefone:</label>
                 <input type='text' id='telefone' name='telefone' placeholder='Telefone' value='$resultado[telefone]'> <br>
                 <label>Foto de perfil:</label>
@@ -116,7 +150,9 @@
                 <label>Senha:</label>
                 <input type='password' name='senhanova' placeholder='Se deseja mudar a senha digite aqui' value=''> <br>
                 <label>Digite a senha atual para confirmar:</label> <br>
-                <p style='text-align: center'><input type='password' name='senha' placeholder='Digite a senha atual' value='' required> </p>"
+                <p style='text-align: center'><input type='password' name='senha' placeholder='Digite a senha atual' value='' required> </p>
+                <input type='hidden' name='latitude' id='perfilLat' value=''>
+                <input type='hidden' name='longitude' id='perfilLng' value=''>"
         ?>
                 <div class='hidden_sub' style='text-align: center'><input type='submit' value='Editar' onclick='return validarDados()'> <input type='reset' value='Cancelar' onclick="invisibleON('editar')"></div>
                     

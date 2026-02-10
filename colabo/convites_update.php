@@ -108,34 +108,51 @@
 
         $status_pendente = SERVICO_STATUS_PENDENTE;
         $verifique = "SELECT A.endereco 'endereco', B.nome_func 'funcao', A.id_servico 'id_servico',
-            A.valor_atual 'valor', A.data_2 'data_2', C.nome 'nome'
+            A.valor_atual 'valor', A.data_2 'data_2', C.nome 'nome', C.foto 'foto_cliente'
             FROM servico A INNER JOIN registro C ON C.id_registro = A.registro_id_registro 
             INNER JOIN funcoes B ON B.id_funcoes = A.funcoes_id_funcoes
             WHERE id_trabalhador = '$_SESSION[id_acesso]' AND ativo='$status_pendente'";
         $jogue_no_banco = mysqli_query($conn, $verifique);
+        $total_chamados = mysqli_num_rows($jogue_no_banco);
         $tem_chamado = false;
+        if ($total_chamados > 0) {
+            echo "<div class='collab-calls__summary'>
+                    <div class='collab-calls__count'>Voce tem <strong>{$total_chamados}</strong> chamado(s) aguardando resposta.</div>
+                    <div class='collab-calls__chips'>
+                        <span class='call-chip'>Responda rapido para aumentar sua avaliacao.</span>
+                        <span class='call-chip call-chip--warn'>Pendentes agora</span>
+                    </div>
+                </div>";
+        }
         while ($linha75 = mysqli_fetch_array($jogue_no_banco)) {
             $tem_chamado = true;
             $data_formatada = $linha75['data_2'] ? date('d/m/Y', strtotime($linha75['data_2'])) : 'Hoje';
+            $nome = htmlspecialchars($linha75['nome'], ENT_QUOTES, 'UTF-8');
+            $funcao = htmlspecialchars($linha75['funcao'], ENT_QUOTES, 'UTF-8');
+            $endereco = htmlspecialchars($linha75['endereco'], ENT_QUOTES, 'UTF-8');
+            $valor = number_format((float)$linha75['valor'], 2, ',', '.');
+            $foto_cliente = !empty($linha75['foto_cliente']) ? $linha75['foto_cliente'] : 'image/logoservicore.jpg';
+            $foto_cliente_safe = htmlspecialchars($foto_cliente, ENT_QUOTES, 'UTF-8');
             echo "<div class='call-card'>
                 <div class='call-card__header'>
-                    <div class='call-card__title'>Pedido de {$linha75['nome']}</div>
+                    <div class='call-card__identity'>
+                        <img class='call-card__avatar' src='{$foto_cliente_safe}' alt='Foto do cliente'>
+                        <div>
+                            <div class='call-card__title'>Pedido de {$nome}</div>
+                            <div class='call-card__subtitle'>{$funcao}</div>
+                        </div>
+                    </div>
                     <span class='status-badge status-badge--pending'>Pendente</span>
                 </div>
                 <div class='call-card__meta'>
-                    <span>Servico: {$linha75['funcao']}</span>
-                    <span>Endereco: {$linha75['endereco']}</span>
-                    <span>Valor/hora: R$ {$linha75['valor']}</span>
+                    <span>Endereco: {$endereco}</span>
+                    <span>Valor/hora: R$ {$valor}</span>
                     <span>Data: {$data_formatada}</span>
                 </div>
                 <form action='#' method='POST' class='call-card__actions'>
                     <input type='hidden' name='id_servico' value='{$linha75['id_servico']}'>
-                    <select name='escolha' required>
-                        <option value=''>Selecionar</option>
-                        <option value='sim'>Aceitar</option>
-                        <option value='nao'>Recusar</option>
-                    </select>
-                    <button type='submit'>Confirmar</button>
+                    <button type='submit' name='escolha' value='sim' class='btn btn-primary btn-small'>Aceitar</button>
+                    <button type='submit' name='escolha' value='nao' class='btn btn-ghost btn-small'>Recusar</button>
                 </form>
             </div>";
         }

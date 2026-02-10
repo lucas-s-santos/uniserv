@@ -156,13 +156,15 @@
 
 <?php
     if (isset($atualizar) && $atualizar == "sim") {
+        $sairLink = $baseUrl === '/' ? '/sair.php' : $baseUrl . '/sair.php';
+        $sairLinkSafe = htmlspecialchars($sairLink, ENT_QUOTES, 'UTF-8');
         echo "<div class='notice notice--warn'>
             <div><strong>Atualizacao:</strong> precisamos recarregar sua sessao para manter os dados corretos.</div>
-            <button type='button' onclick=\"parent.window.location.href='sair.php';\">Recarregar</button>
+            <button type='button' onclick=\"parent.window.location.href='{$sairLinkSafe}';\">Recarregar</button>
         </div>
         <script>
             setTimeout(function () {
-                parent.window.location.href = 'sair.php';
+                parent.window.location.href = '{$sairLinkSafe}';
             }, 3500);
         </script>";
     }
@@ -217,11 +219,13 @@
                         $perfilLink = $baseUrl === '/' ? '/perfil.php' : $baseUrl . '/perfil.php';
                         $historicoLink = $baseUrl === '/' ? '/historico.php' : $baseUrl . '/historico.php';
                         $sairLink = $baseUrl === '/' ? '/sair.php' : $baseUrl . '/sair.php';
+                        $pagamentoLink = $baseUrl === '/' ? '/pagamento_config.php' : $baseUrl . '/pagamento_config.php';
                         $historicoLink .= $role === 2 ? '?qm=2' : '?qm=1';
                         echo "<div class='menu-dropdown'>
                                 <button type='button' class='menu-profile' aria-haspopup='true' aria-expanded='false'>{$apelido}</button>
                                 <div class='menu-dropdown__menu'>
                                     <a href='".htmlspecialchars($perfilLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Perfil</a>
+                                    " . ($role === 2 ? "<a href='".htmlspecialchars($pagamentoLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Pagamento</a>" : "") . "
                                     <a href='".htmlspecialchars($historicoLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Historico</a>
                                     <a href='".htmlspecialchars($notifLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Notificacoes</a>
                                     <a href='".htmlspecialchars($sairLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Sair</a>

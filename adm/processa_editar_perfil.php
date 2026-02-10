@@ -17,6 +17,28 @@
         $genero = $_POST['genero'];
         $senha_nova = $_POST['senhanova'];
         $senha_atual = $_POST['senha'];
+        $pix_tipo = isset($_POST['pix_tipo']) ? trim($_POST['pix_tipo']) : '';
+        $pix_chave = isset($_POST['pix_chave']) ? trim($_POST['pix_chave']) : '';
+        $latitude = null;
+        $longitude = null;
+        $has_coords = false;
+        if (isset($_POST['latitude'], $_POST['longitude'])) {
+            $lat_raw = str_replace(',', '.', trim($_POST['latitude']));
+            $lng_raw = str_replace(',', '.', trim($_POST['longitude']));
+            if ($lat_raw !== '' && $lng_raw !== '' && is_numeric($lat_raw) && is_numeric($lng_raw)) {
+                $latitude = (float)$lat_raw;
+                $longitude = (float)$lng_raw;
+                $has_coords = true;
+            }
+        }
+        if (!$has_coords) {
+            $geo = geocode_nominatim($cidade . ', ' . $estado . ', Brasil');
+            if ($geo) {
+                $latitude = $geo['lat'];
+                $longitude = $geo['lng'];
+                $has_coords = true;
+            }
+        }
         $foto_path = null;
         $foto_invalida = false;
         if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -94,6 +116,18 @@
 
         $stmt->execute();
         $stmt->close();
+        if (isset($_POST['pix_tipo']) || isset($_POST['pix_chave'])) {
+            $stmt = $conn->prepare("UPDATE registro SET pix_tipo=?, pix_chave=? WHERE id_registro=?");
+            $stmt->bind_param("ssi", $pix_tipo, $pix_chave, $id);
+            $stmt->execute();
+            $stmt->close();
+        }
+        if ($has_coords) {
+            $stmt = $conn->prepare("UPDATE registro SET latitude=?, longitude=? WHERE id_registro=?");
+            $stmt->bind_param("ddi", $latitude, $longitude, $id);
+            $stmt->execute();
+            $stmt->close();
+        }
         audit_log($conn, 'editar', 'registro', $id, 'Usuario atualizou perfil');
 
         if ($foto_invalida) {
