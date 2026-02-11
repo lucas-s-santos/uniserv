@@ -1427,6 +1427,54 @@ body:not(.menu-frame) {
     border-radius: 14px;
 }
 
+.profile-certificate {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-certificate__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--c-muted);
+    font-weight: 700;
+}
+
+.profile-certificate__content {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 16px;
+    align-items: center;
+}
+
+.profile-certificate__thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--c-border);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.profile-certificate__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--c-text);
+}
+
+.profile-certificate__empty {
+    font-size: 13px;
+    color: var(--c-muted);
+}
+
 .profile-badge {
     position: absolute;
     bottom: -8px;
@@ -3959,6 +4007,64 @@ button:disabled {
     flex-shrink: 0;
 }
 
+.service-card__person-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.service-card__person-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--c-muted);
+}
+
+.service-card__person-info strong {
+    font-size: 15px;
+    color: var(--c-heading);
+}
+
+.service-card__media {
+    margin: 16px 0;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+}
+
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.media-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.media-tile img {
+    width: 100%;
+    max-width: 240px;
+    border-radius: 10px;
+    border: 1px solid var(--c-border);
+    object-fit: cover;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.media-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--c-muted);
+    font-weight: 700;
+}
+
 .service-card__name {
     font-size: 16px;
     font-weight: 700;
@@ -4664,11 +4770,38 @@ button:disabled {
     justify-content: space-between;
     align-items: center;
     gap: 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--c-shadow);
+}
+
+.payment-hero::before,
+.payment-hero::after {
+    content: '';
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(31, 111, 235, 0.18), transparent 65%);
+    pointer-events: none;
+}
+
+.payment-hero::before {
+    top: -120px;
+    right: -60px;
+}
+
+.payment-hero::after {
+    bottom: -120px;
+    left: -60px;
+    background: radial-gradient(circle, rgba(24, 184, 153, 0.18), transparent 65%);
 }
 
 .payment-hero-content {
     flex: 1;
     text-align: center;
+    position: relative;
+    z-index: 1;
 }
 
 .payment-icon {
@@ -4722,6 +4855,8 @@ button:disabled {
 .payment-return {
     display: flex;
     align-items: center;
+    position: relative;
+    z-index: 1;
 }
 
 .payment-container {
@@ -4759,6 +4894,7 @@ button:disabled {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 .payment-method-card::before {
@@ -4837,6 +4973,7 @@ button:disabled {
     border-radius: 12px;
     text-align: center;
     animation: fadeIn 0.6s ease-out;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .qr-container {
@@ -5028,6 +5165,7 @@ button:disabled {
     background: linear-gradient(135deg, rgba(31, 111, 235, 0.05), rgba(24, 184, 153, 0.03));
     border: 1px solid var(--c-border);
     border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
 }
 
 .receipt-status {
@@ -5225,6 +5363,148 @@ button:disabled {
 
     .section-header {
         font-size: 16px;
+    }
+}
+
+/* ========================================
+   PAYMENT CONFIG - Recebimento
+   ======================================== */
+
+.payment-config {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.payment-config__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.payment-config__card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--c-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.payment-config__header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.payment-config__kicker {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+    color: var(--c-accent);
+    margin-bottom: 8px;
+}
+
+.payment-config__header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--c-heading);
+    margin-bottom: 8px;
+}
+
+.payment-config__header p {
+    font-size: 14px;
+    color: var(--c-muted);
+}
+
+.payment-config__options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.payment-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-toggle input {
+    margin-bottom: 6px;
+}
+
+.payment-toggle__label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--c-heading);
+}
+
+.payment-toggle__hint {
+    font-size: 12px;
+    color: var(--c-muted);
+}
+
+.payment-toggle:hover {
+    border-color: var(--c-primary);
+    transform: translateY(-2px);
+}
+
+.payment-config__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.payment-config__field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-muted);
+}
+
+.payment-config__field input,
+.payment-config__field select {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--c-border);
+    padding: 12px 14px;
+    background: var(--c-input-bg);
+    color: var(--c-input-text);
+    font-size: 14px;
+    transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.payment-config__field input:focus,
+.payment-config__field select:focus {
+    outline: none;
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2);
+    background: var(--c-input-bg-hover);
+}
+
+.payment-config__save {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(31, 111, 235, 0.08), rgba(24, 184, 153, 0.05));
+}
+
+@media (max-width: 900px) {
+    .payment-config__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-config__save {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 

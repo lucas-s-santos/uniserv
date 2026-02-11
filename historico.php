@@ -86,18 +86,40 @@
                 $jogue_no_banco = mysqli_query($conn, $quantidade);
                 $salvar = mysqli_fetch_array($jogue_no_banco);
                 $cont = $salvar['conta'];
-                $historico = "SELECT A.nome 'nome_colaborador', B.nome_func 'funcao', C.valor_atual 'valor_hora', C.tempo_servico 'tempo_min', C.avaliacao 'avaliacao', C.ativo 'ativo', 
-                C.comentario 'comentario', C.data_2 'data_2', C.id_servico FROM servico C INNER JOIN registro A ON A.id_registro = C.id_trabalhador
-                 INNER JOIN funcoes B ON B.id_funcoes = C.funcoes_id_funcoes WHERE registro_id_registro = '$_SESSION[id_acesso]' AND ativo='$status_finalizado' ORDER BY id_servico DESC";
+                $historico = "SELECT A.nome 'nome_colaborador', A.foto 'foto_colaborador', B.nome_func 'funcao', C.valor_atual 'valor_hora', C.tempo_servico 'tempo_min',
+                C.avaliacao 'avaliacao', C.ativo 'ativo', C.comentario 'comentario', C.data_2 'data_2', C.id_servico, C.foto_antes, C.foto_depois
+                FROM servico C INNER JOIN registro A ON A.id_registro = C.id_trabalhador
+                INNER JOIN funcoes B ON B.id_funcoes = C.funcoes_id_funcoes WHERE registro_id_registro = '$_SESSION[id_acesso]' AND ativo='$status_finalizado' ORDER BY id_servico DESC";
                 $jogue_no_banco = mysqli_query($conn, $historico);
                 echo "<div class='service-list'>";
                 while($linha = mysqli_fetch_array($jogue_no_banco)) {
                     $data_a = date('d/m/Y',  strtotime($linha['data_2']));
                     $resultado_conta = round(($linha['valor_hora']/60) * $linha['tempo_min']);
+                    $foto_colab = !empty($linha['foto_colaborador']) ? $linha['foto_colaborador'] : 'image/logoservicore.jpg';
+                    $foto_colab_safe = htmlspecialchars($foto_colab, ENT_QUOTES, 'UTF-8');
+                    $foto_antes = !empty($linha['foto_antes']) ? $linha['foto_antes'] : '';
+                    $foto_depois = !empty($linha['foto_depois']) ? $linha['foto_depois'] : '';
+                    $media_items = '';
+                    if ($foto_antes !== '') {
+                        $foto_antes_safe = htmlspecialchars($foto_antes, ENT_QUOTES, 'UTF-8');
+                        $media_items .= "<div class='media-tile'><span class='media-label'>Antes</span><a href='{$foto_antes_safe}' target='_blank'><img src='{$foto_antes_safe}' alt='Foto antes'></a></div>";
+                    }
+                    if ($foto_depois !== '') {
+                        $foto_depois_safe = htmlspecialchars($foto_depois, ENT_QUOTES, 'UTF-8');
+                        $media_items .= "<div class='media-tile'><span class='media-label'>Depois</span><a href='{$foto_depois_safe}' target='_blank'><img src='{$foto_depois_safe}' alt='Foto depois'></a></div>";
+                    }
+                    $media_html = $media_items !== '' ? "<div class='service-card__media'><div class='media-grid'>{$media_items}</div></div>" : '';
                     echo "<div class='service-card'>
                             <div class='service-card__header'>
                                 <div class='service-card__title'>Registro Nº$cont</div>
                                 <span class='status-badge status-badge--done'>Finalizado</span>
+                            </div>
+                            <div class='service-card__person-line'>
+                                <img class='service-card__avatar' src='{$foto_colab_safe}' alt='Foto do colaborador'>
+                                <div class='service-card__person-info'>
+                                    <span>Colaborador</span>
+                                    <strong>$linha[nome_colaborador]</strong>
+                                </div>
                             </div>
                             <div class='service-card__meta'>
                                 <span>Data: $data_a</span>
@@ -105,6 +127,7 @@
                                 <span>Serviço: $linha[funcao]</span>
                                 <span>Total: R$ $resultado_conta</span>
                             </div>";
+                    echo $media_html;
                     if ($linha['avaliacao'] == 0) {
                         echo "<form action='#' method='POST'>
                                 <input type='hidden' name='id_servico' value='$linha[id_servico]'>
@@ -133,18 +156,41 @@
                 $jogue_no_banco = mysqli_query($conn, $quantidade);
                 $salvar = mysqli_fetch_array($jogue_no_banco);
                 $cont = $salvar['conta'];
-                $historico = "SELECT A.nome 'nome_colaborador', B.nome_func 'funcao', C.valor_atual 'valor_hora', C.tempo_servico 'tempo_min', C.avaliacao 'avaliacao', C.ativo 'ativo', 
-                C.comentario 'comentario', C.data_2 'data_2', C.id_servico FROM servico C INNER JOIN registro A ON A.id_registro = C.id_trabalhador
-                 INNER JOIN funcoes B ON B.id_funcoes = C.funcoes_id_funcoes WHERE id_trabalhador = '$_SESSION[id_acesso]' AND ativo='$status_finalizado' ORDER BY id_servico DESC";
+                $historico = "SELECT A.nome 'nome_colaborador', B.nome_func 'funcao', C.valor_atual 'valor_hora', C.tempo_servico 'tempo_min', C.avaliacao 'avaliacao', C.ativo 'ativo',
+                C.comentario 'comentario', C.data_2 'data_2', C.id_servico, C.foto_antes, C.foto_depois, D.nome 'nome_cliente', D.foto 'foto_cliente'
+                FROM servico C INNER JOIN registro A ON A.id_registro = C.id_trabalhador
+                INNER JOIN registro D ON D.id_registro = C.registro_id_registro
+                INNER JOIN funcoes B ON B.id_funcoes = C.funcoes_id_funcoes WHERE id_trabalhador = '$_SESSION[id_acesso]' AND ativo='$status_finalizado' ORDER BY id_servico DESC";
                 $jogue_no_banco = mysqli_query($conn, $historico);
                 echo "<div class='service-list'>";
                 while($linha = mysqli_fetch_array($jogue_no_banco)) {
                     $data_a = date('d/m/Y',  strtotime($linha['data_2']));
                     $resultado_conta = round(($linha['valor_hora']/60) * $linha['tempo_min']);
+                    $foto_cliente = !empty($linha['foto_cliente']) ? $linha['foto_cliente'] : 'image/logoservicore.jpg';
+                    $foto_cliente_safe = htmlspecialchars($foto_cliente, ENT_QUOTES, 'UTF-8');
+                    $foto_antes = !empty($linha['foto_antes']) ? $linha['foto_antes'] : '';
+                    $foto_depois = !empty($linha['foto_depois']) ? $linha['foto_depois'] : '';
+                    $media_items = '';
+                    if ($foto_antes !== '') {
+                        $foto_antes_safe = htmlspecialchars($foto_antes, ENT_QUOTES, 'UTF-8');
+                        $media_items .= "<div class='media-tile'><span class='media-label'>Antes</span><a href='{$foto_antes_safe}' target='_blank'><img src='{$foto_antes_safe}' alt='Foto antes'></a></div>";
+                    }
+                    if ($foto_depois !== '') {
+                        $foto_depois_safe = htmlspecialchars($foto_depois, ENT_QUOTES, 'UTF-8');
+                        $media_items .= "<div class='media-tile'><span class='media-label'>Depois</span><a href='{$foto_depois_safe}' target='_blank'><img src='{$foto_depois_safe}' alt='Foto depois'></a></div>";
+                    }
+                    $media_html = $media_items !== '' ? "<div class='service-card__media'><div class='media-grid'>{$media_items}</div></div>" : '';
                     echo "<div class='service-card'>
                             <div class='service-card__header'>
                                 <div class='service-card__title'>Registro Nº$cont</div>
                                 <span class='status-badge status-badge--done'>Finalizado</span>
+                            </div>
+                            <div class='service-card__person-line'>
+                                <img class='service-card__avatar' src='{$foto_cliente_safe}' alt='Foto do cliente'>
+                                <div class='service-card__person-info'>
+                                    <span>Cliente</span>
+                                    <strong>$linha[nome_cliente]</strong>
+                                </div>
                             </div>
                             <div class='service-card__meta'>
                                 <span>Data: $data_a</span>
@@ -152,6 +198,7 @@
                                 <span>Serviço: $linha[funcao]</span>
                                 <span>Total: R$ $resultado_conta</span>
                             </div>";
+                    echo $media_html;
                     if ($linha['avaliacao'] == 0) {
                         echo "<div class='service-card__meta'><span>Avaliação: Não foi avaliado</span></div></div>";
                     } else {

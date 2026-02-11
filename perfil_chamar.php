@@ -141,6 +141,8 @@
     $colab_foto_safe = htmlspecialchars($colab_foto, ENT_QUOTES, 'UTF-8');
     $colab_lat = $resultado_trafun['latitude'] !== null ? (float)$resultado_trafun['latitude'] : null;
     $colab_lng = $resultado_trafun['longitude'] !== null ? (float)$resultado_trafun['longitude'] : null;
+    $certificado_path = !empty($resultado_trafun['certificado']) ? $resultado_trafun['certificado'] : '';
+    $certificado_safe = htmlspecialchars($certificado_path, ENT_QUOTES, 'UTF-8');
     $is_top = is_numeric($media_avaliacoes) && (float)$media_avaliacoes >= 4.7 && (int)$total_avaliacoes >= 5;
 ?>
 
@@ -212,6 +214,20 @@
                             <?php echo htmlspecialchars($mensagem_pagamento, ENT_QUOTES, 'UTF-8'); ?>
                         </div>
                     <?php } ?>
+                    <div class="profile-certificate">
+                        <div class="profile-certificate__label">Certificado</div>
+                        <?php if ($certificado_path !== '') { ?>
+                            <div class="profile-certificate__content">
+                                <img class="profile-certificate__thumb" src="<?php echo $certificado_safe; ?>" alt="Certificado do colaborador">
+                                <div class="profile-certificate__actions">
+                                    <span>Documento enviado pelo colaborador</span>
+                                    <a class="btn btn-ghost btn-small" href="<?php echo $certificado_safe; ?>" target="_blank">Abrir</a>
+                                </div>
+                            </div>
+                        <?php } else { ?>
+                            <div class="profile-certificate__empty">Sem certificado informado</div>
+                        <?php } ?>
+                    </div>
                     <div class="profile-comments">
                         <div class="profile-comments__label">Comentarios recentes</div>
                         <select name="enfeite" class="profile-comments__select">
