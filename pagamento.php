@@ -167,91 +167,161 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-            <section class="page-header">
-                <div>
-                    <div class="page-kicker">Pagamento</div>
-                    <h1 class="page-title">Finalize o pagamento do servico</h1>
-                    <p class="page-subtitle">Envie o comprovante para o colaborador confirmar.</p>
+            <!-- HEADER COM DESTAQUE -->
+            <section class="payment-hero">
+                <div class="payment-hero-content">
+                    <div class="payment-icon">💳</div>
+                    <h1 class="payment-title">Finalize o pagamento</h1>
+                    <p class="payment-subtitle">Recompense o trabalho bem feito de <strong><?php echo htmlspecialchars($servico['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></strong></p>
+                    <div class="payment-amount">
+                        <span class="amount-label">Valor a pagar</span>
+                        <span class="amount-value">R$ <?php echo $valor_fmt; ?></span>
+                    </div>
                 </div>
-                <div class="page-actions">
-                    <a class="btn btn-ghost" href="servicos.php">Voltar</a>
+                <div class="payment-return">
+                    <a class="btn btn-ghost" href="servicos.php">← Voltar</a>
                 </div>
             </section>
 
-            <div class="fonte">
-                <div class="dentro">
-                    <div class="section-title">Dados do pagamento</div>
-                    <div class="texto">Colaborador: <?php echo htmlspecialchars($servico['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></div>
-                    <div class="texto">Valor final: <b>R$ <?php echo $valor_fmt; ?></b></div>
-                    <div class="texto">Metodos aceitos: <b>
-                        <?php
-                            $metodos = [];
-                            if ($aceita_pix) { $metodos[] = 'PIX'; }
-                            if ($aceita_dinheiro) { $metodos[] = 'Dinheiro'; }
-                            if (isset($servico['aceita_cartao_presencial']) && (int)$servico['aceita_cartao_presencial'] === 1) { $metodos[] = 'Cartao presencial'; }
-                            echo htmlspecialchars(implode(' e ', $metodos) ?: 'Nao informado', ENT_QUOTES, 'UTF-8');
-                        ?>
-                    </b></div>
-                    <?php if (!empty($pagamento_preferido)) { ?>
-                        <div class="texto">Preferencia: <b><?php echo $pagamento_preferido; ?></b></div>
-                    <?php } ?>
-                    <?php if (!empty($mensagem_pagamento)) { ?>
-                        <div class="notice" style="margin-top: 12px;">
-                            <?php echo htmlspecialchars($mensagem_pagamento, ENT_QUOTES, 'UTF-8'); ?>
-                        </div>
-                    <?php } ?>
-                    <?php if ($pix_info && $aceita_pix) { ?>
-                        <div class="texto">Tipo: <b><?php echo $pix_tipo ?: 'Nao informado'; ?></b></div>
-                        <div class="texto">Chave PIX: <b><?php echo $pix_chave; ?></b></div>
-                        <div class="button-group" style="margin-top: 10px;">
-                            <button type="button" class="btn btn-ghost btn-small" data-copy-text="<?php echo htmlspecialchars($pix_chave_raw, ENT_QUOTES, 'UTF-8'); ?>" data-copy-target="pixCopyNotice">Copiar PIX</button>
-                            <button type="button" class="btn btn-ghost btn-small" data-copy-text="<?php echo htmlspecialchars((string)$valor_final, ENT_QUOTES, 'UTF-8'); ?>" data-copy-target="valorCopyNotice">Copiar valor</button>
-                            <?php if ($pix_payload) { ?>
-                                <button type="button" class="btn btn-ghost btn-small" data-copy-text="<?php echo htmlspecialchars($pix_payload, ENT_QUOTES, 'UTF-8'); ?>" data-copy-target="payloadCopyNotice">Copiar PIX copia e cola</button>
-                            <?php } ?>
-                        </div>
-                        <div class="texto" id="pixCopyNotice"></div>
-                        <div class="texto" id="valorCopyNotice"></div>
-                        <div class="texto" id="payloadCopyNotice"></div>
-                        <?php if ($pix_qr) { ?>
-                            <div class="section-title" style="margin-top: 12px;">QR code PIX com valor</div>
-                            <img src="<?php echo htmlspecialchars($pix_qr, ENT_QUOTES, 'UTF-8'); ?>" alt="QR code PIX" style="width: 220px; height: 220px; border-radius: 12px; border: 1px solid var(--c-border);">
-                            <div class="texto" style="font-size: 12px;">Escaneie para pagar com PIX.</div>
-                        <?php } ?>
-                    <?php } else { ?>
-                        <?php if ($aceita_dinheiro || (isset($servico['aceita_cartao_presencial']) && (int)$servico['aceita_cartao_presencial'] === 1)) { ?>
-                            <div class="notice" style="margin-top: 12px;">
-                                Pagamento presencial. Combine no atendimento.
+            <!-- CONTAINER PRINCIPAL -->
+            <div class="payment-container">
+                <!-- METODOS DE PAGAMENTO -->
+                <div class="payment-methods-section">
+                    <h2 class="section-header">Escolha a forma de pagamento</h2>
+                    <div class="payment-methods-grid">
+                        
+                        <!-- PIX -->
+                        <?php if ($pix_info && $aceita_pix) { ?>
+                        <div class="payment-method-card pix-method">
+                            <div class="method-header">
+                                <span class="method-icon">📱</span>
+                                <h3>PIX Instantâneo</h3>
                             </div>
-                            <?php if ($pagamento_status === 0) { ?>
-                                <form action="servicos.php" method="POST" style="margin-top: 8px;">
-                                    <input type="hidden" name="acao" value="pagar_presencial">
-                                    <input type="hidden" name="id_servico" value="<?php echo (int)$servico['id_servico']; ?>">
-                                    <button type="submit" class="btn btn-primary btn-small">Confirmar pagamento presencial</button>
-                                </form>
-                            <?php } ?>
-                        <?php } else { ?>
-                            <div class="texto">O colaborador ainda nao informou uma chave PIX.</div>
-                        <?php } ?>
-                    <?php } ?>
+                            <p class="method-badge">Mais rápido</p>
+                            
+                            <!-- QR CODE -->
+                            <div class="qr-section">
+                                <div class="qr-container">
+                                    <img src="<?php echo htmlspecialchars($pix_qr, ENT_QUOTES, 'UTF-8'); ?>" alt="QR code PIX" class="qr-image">
+                                    <p class="qr-instruction">Abra seu banco e escaneie</p>
+                                </div>
+                            </div>
 
-                    <div class="section-title" style="margin-top: 16px;">Comprovante</div>
+                            <!-- DADOS PIX -->
+                            <div class="pix-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Tipo:</span>
+                                    <span class="detail-value"><?php echo $pix_tipo ?: 'Não informado'; ?></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Chave PIX:</span>
+                                    <span class="detail-value pix-key"><?php echo $pix_chave; ?></span>
+                                </div>
+                            </div>
+
+                            <!-- BOTOES DE CÓPIA -->
+                            <div class="copy-buttons">
+                                <button type="button" class="btn btn-copy" data-copy-text="<?php echo htmlspecialchars($pix_chave_raw, ENT_QUOTES, 'UTF-8'); ?>" data-copy-target="pixCopyNotice" title="Copiar chave PIX">
+                                    📋 Copiar chave
+                                </button>
+                                <?php if ($pix_payload) { ?>
+                                <button type="button" class="btn btn-copy" data-copy-text="<?php echo htmlspecialchars($pix_payload, ENT_QUOTES, 'UTF-8'); ?>" data-copy-target="payloadCopyNotice" title="Copiar PIX cópia e cola">
+                                    📋 PIX cópia e cola
+                                </button>
+                                <?php } ?>
+                            </div>
+                            <div id="pixCopyNotice" class="copy-feedback"></div>
+                            <div id="payloadCopyNotice" class="copy-feedback"></div>
+                        </div>
+                        <?php } ?>
+
+                        <!-- DINHEIRO / CARTÃO PRESENCIAL -->
+                        <?php if ($aceita_dinheiro || (isset($servico['aceita_cartao_presencial']) && (int)$servico['aceita_cartao_presencial'] === 1)) { ?>
+                        <div class="payment-method-card cash-method">
+                            <div class="method-header">
+                                <span class="method-icon">💰</span>
+                                <h3>Presencial</h3>
+                            </div>
+                            <p class="method-badge method-badge--secondary">Na hora do atendimento</p>
+                            
+                            <div class="cash-info">
+                                <p>Efetue o pagamento no momento do atendimento através de:</p>
+                                <ul class="payment-accepts">
+                                    <?php if ($aceita_dinheiro) { ?>
+                                    <li>💵 Dinheiro</li>
+                                    <?php } ?>
+                                    <?php if (isset($servico['aceita_cartao_presencial']) && (int)$servico['aceita_cartao_presencial'] === 1) { ?>
+                                    <li>🏧 Cartão de débito/crédito</li>
+                                    <?php } ?>
+                                </ul>
+                            </div>
+
+                            <?php if ($pagamento_status === 0) { ?>
+                            <form action="servicos.php" method="POST" style="margin-top: 12px;">
+                                <input type="hidden" name="acao" value="pagar_presencial">
+                                <input type="hidden" name="id_servico" value="<?php echo (int)$servico['id_servico']; ?>">
+                                <button type="submit" class="btn btn-primary btn-full">Confirmar pagamento presencial</button>
+                            </form>
+                            <?php } ?>
+                        </div>
+                        <?php } ?>
+
+                    </div>
+
+                    <!-- PREFERENCIA E MENSAGEM -->
+                    <?php if (!empty($pagamento_preferido) || !empty($mensagem_pagamento)) { ?>
+                    <div class="info-box">
+                        <?php if (!empty($pagamento_preferido)) { ?>
+                        <div class="info-item">
+                            <span class="info-icon">⭐</span>
+                            <span>Preferência: <strong><?php echo $pagamento_preferido; ?></strong></span>
+                        </div>
+                        <?php } ?>
+                        <?php if (!empty($mensagem_pagamento)) { ?>
+                        <div class="info-item">
+                            <span class="info-icon">💬</span>
+                            <p><?php echo htmlspecialchars($mensagem_pagamento, ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                        <?php } ?>
+                    </div>
+                    <?php } ?>
+                </div>
+
+                <!-- COMPROVANTE -->
+                <div class="payment-receipt-section">
+                    <h2 class="section-header">Comprovante de pagamento</h2>
+                    
                     <?php if ($pagamento_status === 1 && !empty($servico['pagamento_comprovante'])) { ?>
-                        <div class="texto">Comprovante enviado. Aguarde confirmacao.</div>
+                    <div class="receipt-status success">
+                        <span class="status-icon">✓</span>
+                        <div>
+                            <p class="status-title">Comprovante enviado</p>
+                            <p class="status-subtitle">Aguardando confirmação do colaborador</p>
+                        </div>
                         <a class="btn btn-ghost btn-small" href="<?php echo htmlspecialchars($servico['pagamento_comprovante'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank">Ver comprovante</a>
+                    </div>
                     <?php } else { ?>
-                        <form action="servicos.php" method="POST" enctype="multipart/form-data" style="margin-top: 8px;">
+                    <div class="receipt-upload">
+                        <p class="upload-instruction">Envie o comprovante do pagamento para confirmar a transação</p>
+                        <form action="servicos.php" method="POST" enctype="multipart/form-data" class="receipt-form">
                             <input type="hidden" name="acao" value="pagar">
                             <input type="hidden" name="id_servico" value="<?php echo (int)$servico['id_servico']; ?>">
-                            <input type="file" name="comprovante" accept="image/png, image/jpeg, application/pdf" required>
-                            <button type="submit" class="btn btn-primary btn-small">Enviar comprovante</button>
+                            
+                            <div class="file-input-wrapper">
+                                <input type="file" id="comprovante-input" name="comprovante" accept="image/png, image/jpeg, application/pdf" required>
+                                <label for="comprovante-input" class="file-input-label">
+                                    <span class="upload-icon">📎</span>
+                                    <span class="upload-text">Selecione ou arraste o arquivo</span>
+                                    <span class="upload-format">PNG, JPEG ou PDF</span>
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-full btn-large">Enviar comprovante</button>
                         </form>
+                    </div>
                     <?php } ?>
                 </div>
             </div>
         </main>
     </body>
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

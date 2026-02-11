@@ -109,35 +109,229 @@
                 }
             </script>
 
+            <?php if (isset($_SESSION['sucesso_edicao']) && $_SESSION['sucesso_edicao']) { ?>
+                <script>
+                    window.addEventListener('load', function() {
+                        if (window.showToast) {
+                            showToast('<?php echo $_SESSION['msg_edicao'] ?? "Usuário editado com sucesso!"; ?>', 'success');
+                        }
+                    });
+                </script>
+                <?php unset($_SESSION['sucesso_edicao']); unset($_SESSION['msg_edicao']); ?>
+            <?php } ?>
 
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-        <section class="page-header">
+        <main class="page">
+        
+        <!-- ADMIN HEADER -->
+        <section class="admin-header">
             <div>
-                <div class="page-kicker">Administracao</div>
-                <h1 class="page-title">Painel do administrador</h1>
-                <p class="page-subtitle">Gerencie usuarios, servicos e acompanhe a atividade recente do sistema.</p>
-            </div>
-            <div class="page-actions">
-                <button type="button" class="btn btn-accent" onclick="invisibleON('hidden5')">Adicionar servico</button>
-                <a class="btn btn-ghost" href="#admin-filter-panel">Filtrar usuarios</a>
-                <a class="btn btn-primary" href="#tabela_cadastros">Ver cadastros</a>
+                <div class="page-kicker">Administração</div>
+                <h1 class="page-title">Painel de Controle</h1>
+                <p class="page-subtitle">Gerencie usuários, serviços e acompanhe a atividade do sistema em tempo real.</p>
             </div>
         </section>
 
-        <section class="info-panel" id="admin-filter-panel">
-            <div class="section-title">Filtro rapido</div>
-            <p class="section-subtitle">Use nome ou CPF para reduzir a lista sem abrir o modal.</p>
-            <form action="adm/processa_pesquisa.php" method="POST" class="admin-filter">
-                <label for="admin-nome">Nome</label>
-                <input type="text" name="nome_adm" id="admin-nome" placeholder="Digite o nome">
-                <label for="admin-cpf">CPF</label>
-                <input type="text" name="cpf_adm" id="admin-cpf" placeholder="Digite o CPF">
-                <button type="submit" class="btn btn-primary">Filtrar</button>
+        <!-- ADMIN STATS -->
+        <section class="admin-stats">
+            <?php
+                $stats_users = $conn->query("SELECT COUNT(*) as total FROM registro")->fetch_assoc()['total'] ?? 0;
+                $stats_services = $conn->query("SELECT COUNT(*) as total FROM servico")->fetch_assoc()['total'] ?? 0;
+                $stats_collab = $conn->query("SELECT COUNT(*) as total FROM registro WHERE funcao = 2")->fetch_assoc()['total'] ?? 0;
+                $stats_active = $conn->query("SELECT COUNT(*) as total FROM servico WHERE ativo > 0")->fetch_assoc()['total'] ?? 0;
+            ?>
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon">👥</div>
+                <div class="admin-stat-content">
+                    <div class="admin-stat-label">Usuários</div>
+                    <div class="admin-stat-value"><?php echo $stats_users; ?></div>
+                </div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon">⚙️</div>
+                <div class="admin-stat-content">
+                    <div class="admin-stat-label">Serviços total</div>
+                    <div class="admin-stat-value"><?php echo $stats_services; ?></div>
+                </div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon">🤝</div>
+                <div class="admin-stat-content">
+                    <div class="admin-stat-label">Colaboradores</div>
+                    <div class="admin-stat-value"><?php echo $stats_collab; ?></div>
+                </div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon">✅</div>
+                <div class="admin-stat-content">
+                    <div class="admin-stat-label">Serviços ativos</div>
+                    <div class="admin-stat-value"><?php echo $stats_active; ?></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN ACTION BUTTONS -->
+        <section class="admin-actions">
+            <button type="button" class="admin-action-btn admin-action-btn--create" onclick="invisibleON('hidden5')">
+                <div class="admin-action-icon">➕</div>
+                <div class="admin-action-content">
+                    <div class="admin-action-title">Novo Serviço</div>
+                    <div class="admin-action-desc">Adicione um novo        serviço ao sistema</div>
+                </div>
+            </button>
+            <button type="button" class="admin-action-btn admin-action-btn--edit" onclick="document.getElementById('admin-nome').focus()">
+                <div class="admin-action-icon">🔍</div>
+                <div class="admin-action-content">
+                    <div class="admin-action-title">Filtrar Usuários</div>
+                    <div class="admin-action-desc">Encontre usuários rapidamente</div>
+                </div>
+            </button>
+            <button type="button" class="admin-action-btn admin-action-btn--delete" onclick="document.getElementById('tabela_cadastros').scrollIntoView({behavior: 'smooth'})">
+                <div class="admin-action-icon">📋</div>
+                <div class="admin-action-content">
+                    <div class="admin-action-title">Ver Cadastros</div>
+                    <div class="admin-action-desc">Lista completa de usuários</div>
+                </div>
+            </button>
+        </section>
+
+        <!-- ACTIVITY SECTION -->
+        <section class="admin-section">
+            <div class="admin-section-header">
+                <div>
+                    <div class="admin-section-title">📊 Atividade Recente</div>
+                    <div class="admin-section-desc">Acompanhe as ações do sistema em tempo real</div>
+                </div>
+            </div>
+            <?php if (empty($audit_items)) { ?>
+                <div class="admin-empty">
+                    <div class="admin-empty-icon">📭</div>
+                    <div>Nenhuma atividade registrada ainda.</div>
+                </div>
+            <?php } else { ?>
+                <div class="admin-activity-list">
+                    <?php foreach (array_slice($audit_items, 0, 10) as $item) {
+                        $acao = htmlspecialchars($item['acao'], ENT_QUOTES, 'UTF-8');
+                        $entidade = htmlspecialchars($item['entidade'], ENT_QUOTES, 'UTF-8');
+                        $nome = $item['apelido'] ?: $item['nome'];
+                        $nome = $nome ? htmlspecialchars($nome, ENT_QUOTES, 'UTF-8') : 'Sistema';
+                        $data_rel = audit_relative_time($item['data_acao']);
+                        $tag_class = audit_tag_class($item['acao']);
+                        echo "<div class='admin-activity-item'>
+                            <div class='admin-activity-badge {$tag_class}'>{$acao}</div>
+                            <div class='admin-activity-main'>
+                                <div class='admin-activity-title'>{$entidade}</div>
+                                <div class='admin-activity-meta'>Por <strong>{$nome}</strong> • {$data_rel}</div>
+                            </div>
+                        </div>";
+                    } ?>
+                </div>
+                <?php if ($audit_pages > 1) { ?>
+                    <div class="admin-pagination">
+                        <?php if ($audit_page > 1) { ?>
+                            <a class="btn btn-ghost btn-small" href="?audit_page=<?php echo $audit_page - 1; ?>">← Anterior</a>
+                        <?php } ?>
+                        <span class="admin-page-info">Página <?php echo $audit_page; ?> de <?php echo $audit_pages; ?></span>
+                        <?php if ($audit_has_next) { ?>
+                            <a class="btn btn-primary btn-small" href="?audit_page=<?php echo $audit_page + 1; ?>">Próxima →</a>
+                        <?php } ?>
+                    </div>
+                <?php } ?>
+            <?php } ?>
+        </section>
+
+        <!-- FILTER SECTION -->
+        <section class="admin-section">
+            <div class="admin-section-header">
+                <div>
+                    <div class="admin-section-title">🔎 Pesquisa Rápida</div>
+                    <div class="admin-section-desc">Encontre usuários por nome ou CPF</div>
+                </div>
+            </div>
+            <form action="adm/processa_pesquisa.php" method="POST" class="admin-search-form">
+                <div class="admin-search-inputs">
+                    <div class="campo-texto">
+                        <label for="admin-nome">Nome</label>
+                        <input type="text" name="nome_adm" id="admin-nome" placeholder="Digite o nome">
+                    </div>
+                    <div class="campo-texto">
+                        <label for="admin-cpf">CPF</label>
+                        <input type="text" name="cpf_adm" id="admin-cpf" placeholder="Ex: 000.000.000-00">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Pesquisar</button>
             </form>
+        </section>
+
+        <!-- USERS TABLE SECTION -->
+        <section class="admin-section">
+            <div class="admin-section-header">
+                <div>
+                    <div class="admin-section-title">👥 Usuários Cadastrados</div>
+                    <div class="admin-section-desc">Gerencie todos os usuários do sistema</div>
+                </div>
+            </div>
+            <div class="admin-table-wrapper" id="tabela_cadastros">
+                <table class="admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Cidade</th>
+                            <th>E-mail</th>
+                            <th>Função</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                    <?php
+                        if (isset($_SESSION['nome_adm'])) {$nome_filtro = $_SESSION['nome_adm'];} else {$nome_filtro = "";}
+                        if (isset($_SESSION['cpf_adm'])) {$cpf_filtro = $_SESSION['cpf_adm'];} else {$cpf_filtro = "";}
+                        $nome_like = "%".$nome_filtro."%";
+                        $cpf_like = "%".$cpf_filtro."%";
+                        $stmt = $conn->prepare("SELECT id_registro, nome, cpf, cidade, email, funcao FROM registro WHERE nome LIKE ? AND cpf LIKE ?");
+                        $stmt->bind_param("ss", $nome_like, $cpf_like);
+                        $stmt->execute();
+                        $resultado = $stmt->get_result();
+                        $cont = 0;
+                        while ($linha = mysqli_fetch_array($resultado)) {
+                            $cont++;
+                            $funcao_label = '';
+                            switch ($linha['funcao']) {
+                                case '1': $funcao_label = "👑 Admin"; break;
+                                case '2': $funcao_label = "🤝 Colaborador"; break;
+                                default: $funcao_label = "👤 Cliente";
+                            }
+                            $email_display = strlen($linha['email']) > 25 ? substr($linha['email'], 0, 22) . '...' : $linha['email'];
+                            echo "<tr>
+                                <td data-label='ID'><span class='admin-user-id'>{$linha['id_registro']}</span></td>
+                                <td data-label='Nome'><strong>{$linha['nome']}</strong></td>
+                                <td data-label='CPF'><code>{$linha['cpf']}</code></td>
+                                <td data-label='Cidade'>{$linha['cidade']}</td>
+                                <td data-label='E-mail'><small>{$email_display}</small></td>
+                                <td data-label='Função'><span class='admin-function-badge'>{$funcao_label}</span></td>
+                                <td data-label='Ações'>
+                                    <div class='admin-row-actions'>
+                                        <button type='button' class='btn btn-small btn-primary admin-edit' data-id='{$linha['id_registro']}' title='Editar usuário'>✏️</button>
+                                        <button type='button' class='btn btn-small btn-ghost admin-delete' data-id='{$linha['id_registro']}' title='Excluir usuário'>🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>";
+                        }
+                        $stmt->close();
+                        unset ($_SESSION['nome_adm'], $_SESSION['cpf_adm']);
+                    ?>
+                    </tbody>
+                </table>
+                <div class="admin-table-footer">
+                    <span class="admin-result-count">Total: <strong><?php echo $cont; ?></strong> resultado(s)</span>
+                </div>
+            </div>
         </section>
 
         <?php
@@ -213,97 +407,63 @@
             }
         ?>
 
-        <section class="info-panel">
-            <div class="section-title">Atividade recente</div>
-            <p class="section-subtitle">Ultimas acoes registradas no sistema.</p>
-            <?php if (empty($audit_items)) { ?>
-                <div class="collab-empty">Nenhuma atividade registrada ainda.</div>
-            <?php } else { ?>
-                <table class="audit-table">
-                    <thead>
-                        <tr>
-                            <th>Acao</th>
-                            <th>Entidade</th>
-                            <th>Usuario</th>
-                            <th>Data</th>
-                            <th>Detalhes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($audit_items as $item) {
-                            $acao = htmlspecialchars($item['acao'], ENT_QUOTES, 'UTF-8');
-                            $entidade = htmlspecialchars($item['entidade'], ENT_QUOTES, 'UTF-8');
-                            $entidade_id = $item['entidade_id'] !== null ? (int)$item['entidade_id'] : null;
-                            $detalhes = $item['detalhes'] ? htmlspecialchars($item['detalhes'], ENT_QUOTES, 'UTF-8') : '-';
-                            $nome = $item['apelido'] ?: $item['nome'];
-                            $nome = $nome ? htmlspecialchars($nome, ENT_QUOTES, 'UTF-8') : 'Sistema';
-                            $data_fmt = $item['data_acao'] ? date('d/m/Y H:i', strtotime($item['data_acao'])) : '';
-                            $data_rel = audit_relative_time($item['data_acao']);
-                            $tag_class = audit_tag_class($item['acao']);
-                            $titulo = $entidade_id !== null ? "{$entidade} #{$entidade_id}" : $entidade;
-                            echo "<tr>
-                                <td><span class='audit-tag {$tag_class}'>{$acao}</span></td>
-                                <td>{$titulo}</td>
-                                <td>{$nome}</td>
-                                <td>
-                                    <div class='audit-date'>{$data_rel}</div>
-                                    <div class='audit-date-sub'>{$data_fmt}</div>
-                                </td>
-                                <td><div class='audit-details' title='{$detalhes}'>{$detalhes}</div></td>
-                            </tr>";
-                        } ?>
-                    </tbody>
-                </table>
-                <div class="audit-pagination">
-                    <span class="audit-page-indicator">Pagina <?php echo $audit_page; ?> de <?php echo $audit_pages; ?></span>
-                    <?php if ($audit_page > 1) { ?>
-                        <a class="btn btn-ghost btn-small" href="?audit_page=<?php echo $audit_page - 1; ?>">Anterior</a>
-                    <?php } ?>
-                    <?php if ($audit_has_next) { ?>
-                        <a class="btn btn-primary btn-small" href="?audit_page=<?php echo $audit_page + 1; ?>">Proxima</a>
-                    <?php } ?>
+        <!-- EDIT FORMS SECTION (HIDDEN) -->
+        <form action="adm/processa_editar.php" method="POST" class="hidden form-card" id="hidden2">
+            <div class="title">Pesquisar Usuário</div>
+            <input type="hidden" name="acao" value="pesquisar">
+            <div class="campo-texto">
+                <label for="id_p">ID do Usuário</label>
+                <input type="text" name="id_adm" id="id_p" placeholder="Digite o ID para pesquisar">
+            </div>
+            <button type="submit" class="btn btn-primary" onclick="return issoENumero('hidden2')">Pesquisar</button>
+        </form>
+
+        <form action="adm/processa_deletar.php" method="POST" class="hidden form-card" id="hidden4">
+            <div class="title">Excluir Usuário</div>
+            <input type="hidden" name="acao" value="pesquisar">
+            <div class="campo-texto">
+                <label for="id_p2">ID do Usuário</label>
+                <input type="text" name="id_adm" id="id_p2" placeholder="Digite o ID para excluir">
+            </div>
+            <button type="submit" class="btn btn-ghost" onclick="return confirmacaoID('hidden4')">Excluir</button>
+        </form>
+
+        <form action="adm/processa_criar.php" method="POST" class="hidden form-card" id="hidden5" enctype="multipart/form-data">
+            <div class="title">Criar Novo Serviço</div>
+            <div class="form-grid">
+                <div class="campo-texto full">
+                    <label for="nome_func">Nome do Serviço</label>
+                    <input type="text" id="nome_func" name="nome_func" placeholder="Ex: Limpeza Residencial" required>
                 </div>
-            <?php } ?>
-        </section>
-
-        <form action="adm/processa_editar.php" method="POST" class="hidden" id="hidden2">
-            <div class="title">Editar</div>
-            <input type="hidden" name="acao" value="pesquisar">
-            <label>Digite o id da pessoa:</label> <br>
-            <input type="text" name="id_adm" id="id_p" placeholder="Necessario para a busca"> <br>
-            <div class="hidden_sub" style="text-align: left"><input type="submit" value="Pesquisar" onclick="return issoENumero('hidden2')"></div>
-        </form>
-
-        <form action="adm/processa_deletar.php" method="POST" class="hidden" id="hidden4">
-            <div class="title">Excluir</div>
-            <input type="hidden" name="acao" value="pesquisar">
-            <label>Digite o id da pessoa:</label> <br>
-            <input type="text" name="id_adm" id="id_p2" placeholder="Necessario para a busca"> <br>
-            <div class="hidden_sub" style="text-align: left"><input type="submit" value="Apagar" onclick="return confirmacaoID('hidden4')"></div>
-        </form>
-
-        <form action="adm/processa_criar.php" method="POST" class="hidden" id="hidden5">
-            <div class="title">Criando novo</div>
-            <label>Nome:</label>
-            <input type="text" name="nome_func" placeholder="Filtro por nome"> <br>
-            <label>Categoria:</label>
-            <input type="text" name="categoria" placeholder="Ex: Limpeza, Eletrica"> <br>
-            <label>Valor base:</label>
-            <input type="text" name="valor_base" placeholder="Valor base em R$"> <br>
-            <label>Duração estimada (min):</label>
-            <input type="text" name="duracao_estimada" placeholder="Ex: 60"> <br>
-            <label>Descrição:</label>
-            <input type="text" name="descricao" placeholder="Detalhes do serviço"> <br>
-            <label>Imagem:</label>
-            <input type="file" name="avatar" accept="image/png, image/jpeg"> <br>
-            <div class="hidden_sub"><input type="submit"></div>
+                <div class="campo-texto">
+                    <label for="categoria">Categoria</label>
+                    <input type="text" id="categoria" name="categoria" placeholder="Ex: Limpeza" required>
+                </div>
+                <div class="campo-texto">
+                    <label for="valor_base">Valor Base (R$)</label>
+                    <input type="number" id="valor_base" name="valor_base" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="campo-texto">
+                    <label for="duracao_estimada">Duração (minutos)</label>
+                    <input type="number" id="duracao_estimada" name="duracao_estimada" placeholder="60" required>
+                </div>
+                <div class="campo-texto full">
+                    <label for="descricao">Descrição</label>
+                    <input type="text" id="descricao" name="descricao" placeholder="Detalhes do serviço" required>
+                </div>
+                <div class="campo-texto full">
+                    <label for="avatar">Imagem do Serviço</label>
+                    <input type="file" id="avatar" name="avatar" accept="image/png, image/jpeg">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Criar Serviço</button>
         </form>
 
         <?php
             if (isset($_SESSION['id_adm'])) {
                 echo "<form action='adm/processa_editar.php' method='POST' class='hidden is-open' id='hidden3' style='text-align: left;'>
                 <input type='hidden' name='acao' value='$_SESSION[id_adm]'>
-                <div class='title'>Editar</div>
+                <div class='title'>Editar <button type='button' class='btn-close-form' onclick='fecharEdicao()' style='float: right; cursor: pointer; background: none; border: none; font-size: 24px; padding: 0;'>×</button></div>
                 <label>Nome:</label>
                 <input type='text' name='nome' placeholder='Nome' value='$resultado2[nome]' required> <br>
                 <label>Apelido:</label>
@@ -357,6 +517,13 @@
                     <option value='O'>Outro
                     <option value='P'>Prefiro não falar
                 </select> <br>
+                <label>Função:</label>
+                <select name='funcao' required> 
+                    <option value='$resultado2[funcao]' selected>Atual: " . ($resultado2['funcao'] == '1' ? '👑 Administrador' : ($resultado2['funcao'] == '2' ? '🤝 Colaborador' : '👤 Cliente')) . "
+                    <option value='1'>👑 Administrador
+                    <option value='2'>🤝 Colaborador
+                    <option value='3'>👤 Cliente
+                </select> <br>
                 <label>Nova senha (opcional):</label>
                 <input type='password' name='senha' placeholder='Defina uma nova senha'> <br>
                 <div class='hidden_sub' style='text-align: center'><input type='submit' value='Editar' onclick='return testarOEditar()'></div>    
@@ -364,132 +531,65 @@
             unset ($_SESSION['id_adm']);
             }
         ?>
-        
 
-        <br><br>
-        <div class="section-title">Usuarios cadastrados</div>
-        <div class="tabela_adm table-cards" id="tabela_cadastros">
-            <table>
-                <thead>
-                    <tr><td>ID</td><td>NOME COMPLETO</td><td>CPF</td><td>ESTADO</td><td>CIDADE</td>
-                        <td>GÊNERO</td><td>CNPJ</td><td>EMAIL</td><td>TELEFONE</td><td>Serviços prestados</td><td>Função</td><td>Acoes</td></tr>
-                </thead>
-                <tbody id="admin-table-body">
-                <?php
-                    if (isset($_SESSION['nome_adm'])) {$nome_filtro = $_SESSION['nome_adm'];} else {$nome_filtro = "";}
-                    if (isset($_SESSION['cpf_adm'])) {$cpf_filtro = $_SESSION['cpf_adm'];} else {$cpf_filtro = "";}
-                    $nome_like = "%".$nome_filtro."%";
-                    $cpf_like = "%".$cpf_filtro."%";
-                    $stmt = $conn->prepare("SELECT * FROM registro WHERE nome LIKE ? AND cpf LIKE ?");
-                    $stmt->bind_param("ss", $nome_like, $cpf_like);
-                    $stmt->execute();
-                    $resultado = $stmt->get_result();
-                    $cont = 0;
-                    while ($linha = mysqli_fetch_array($resultado)) {
-                        $cont++;
-                        echo "<tr><td data-label='ID'>$linha[id_registro]</td><td data-label='Nome'>$linha[nome]</td><td data-label='CPF'>$linha[cpf]</td><td data-label='Estado'>$linha[estado]</td><td data-label='Cidade'>$linha[cidade]</td><td data-label='Genero'>";
-                        switch ($linha['sexo']) {case 'M': echo "Masculino"; break;    case 'F': echo "Feminino"; break;
-                            case 'P': echo "Não falar"; break;    default: echo "Outro"; break; 
-                        }   
-                        echo "</td><td data-label='CNPJ'>$linha[cnpj]</td><td data-label='Email'>$linha[email]</td><td data-label='Telefone'>$linha[telefone]</td><td data-label='Servicos prestados'>$linha[servicos_ok]</td><td data-label='Funcao'>";
-                        switch ($linha['funcao']) {case '1': echo "Administrador"; break;    case '2': echo "Colaborador"; break;
-                            default: echo "Cliente"; break; 
-                        }
-                                                echo "</td><td data-label='Acoes'>
-                                                                <div class='admin-table-actions'>
-                                                                        <button type='button' class='btn btn-small btn-ghost admin-edit' data-id='$linha[id_registro]'>Editar</button>
-                                                                        <button type='button' class='btn btn-small btn-ghost admin-delete' data-id='$linha[id_registro]'>Excluir</button>
-                                                                </div>
-                                                            </td></tr>";
-                    }
-                    $stmt->close();
-                    unset ($_SESSION['nome_adm'], $_SESSION['cpf_adm']);
-                    echo "<tr><td data-label='ID'>(X)</td><td data-label='Nome'>($cont) Resultados</td></tr>";
-                ?>
-                </tbody>
-            </table>
-            <br><br><br><br>
-        </div>
-            <script>
-                let edit2 = document.getElementById('tabela_cadastros');
-                <?php 
-                    if (isset($_SESSION['exibir_tabela'])) {
-                        echo "invisibleON('tabela_cadastros')";
-                        unset($_SESSION['exibir_tabela']);
-                    }
-                ?>
+        </main>
+        <script>
+            // Fechar o formulário de edição
+            function fecharEdicao() {
+                const editForm = document.getElementById('hidden3');
+                if (editForm) {
+                    editForm.classList.remove('is-open');
+                }
+            }
 
-                (function () {
-                    var nomeInput = document.getElementById('admin-nome');
-                    var cpfInput = document.getElementById('admin-cpf');
-                    var tableBody = document.getElementById('admin-table-body');
-                    var timer;
-
-                    function abrirEdicao(id) {
-                        var form = document.getElementById('hidden2');
-                        var input = document.getElementById('id_p');
-                        if (!form || !input) {
-                            return;
-                        }
-                        input.value = id;
-                        invisibleON('hidden2');
+            // Binding dos botões de editar
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('admin-edit')) {
+                    const userId = event.target.getAttribute('data-id');
+                    // Preencher e submeter o formulário hidden2 automaticamente
+                    const searchForm = document.getElementById('hidden2');
+                    if (searchForm) {
+                        searchForm.id_adm.value = userId;
+                        // Submeter o formulário automaticamente
+                        searchForm.submit();
                     }
+                }
+            });
 
-                    function bindRowActions() {
-                        var buttons = document.querySelectorAll('.admin-edit');
-                        buttons.forEach(function (btn) {
-                            btn.addEventListener('click', function () {
-                                abrirEdicao(btn.getAttribute('data-id'));
-                            });
-                        });
+            // Binding dos botões de deletar
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('admin-delete')) {
+                    const userId = event.target.getAttribute('data-id');
+                    // Preencher o formulário hidden4 com o ID
+                    const deleteForm = document.getElementById('hidden4');
+                    if (deleteForm) {
+                        deleteForm.id_adm.value = userId;
+                        // Mostrar o formulário de confirmação
+                        deleteForm.classList.add('is-open');
+                    }
+                }
+            });
 
-                        var deleteButtons = document.querySelectorAll('.admin-delete');
-                        deleteButtons.forEach(function (btn) {
-                            btn.addEventListener('click', function () {
-                                var form = document.getElementById('hidden4');
-                                var input = document.getElementById('id_p2');
-                                if (!form || !input) {
-                                    return;
-                                }
-                                input.value = btn.getAttribute('data-id');
-                                invisibleON('hidden4');
-                            });
-                        });
+            // Binding do botão de novo serviço
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('admin-action-btn--create')) {
+                    const createForm = document.getElementById('hidden5');
+                    if (createForm) {
+                        createForm.classList.add('is-open');
                     }
+                }
+            });
 
-                    function fetchResults() {
-                        if (!tableBody) {
-                            return;
-                        }
-                        var nome = nomeInput ? nomeInput.value.trim() : '';
-                        var cpf = cpfInput ? cpfInput.value.trim() : '';
-                        var url = 'adm/processa_pesquisa_ajax.php?nome=' + encodeURIComponent(nome) + '&cpf=' + encodeURIComponent(cpf);
-                        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(function (response) { return response.text(); })
-                            .then(function (html) {
-                                tableBody.innerHTML = html;
-                                bindRowActions();
-                            });
+            // Fechar modais ao clicar fora deles (apenas hidden2, hidden4, hidden5)
+            document.addEventListener('click', function(event) {
+                const modals = ['hidden2', 'hidden4', 'hidden5'];
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && event.target === modal) {
+                        modal.classList.remove('is-open');
                     }
-
-                    function scheduleFetch() {
-                        clearTimeout(timer);
-                        timer = setTimeout(fetchResults, 300);
-                    }
-
-                    if (nomeInput) {
-                        nomeInput.addEventListener('input', scheduleFetch);
-                    }
-                    if (cpfInput) {
-                        cpfInput.addEventListener('input', scheduleFetch);
-                    }
-                    bindRowActions();
-                })();
-            </script>
+                });
+            });
+        </script>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
-
 </html>

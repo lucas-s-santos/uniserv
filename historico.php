@@ -166,8 +166,4 @@
         <div style="width: 100%; height: 45px"></div>
         </main>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

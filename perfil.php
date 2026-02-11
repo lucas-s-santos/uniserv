@@ -87,6 +87,23 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
+        <section class="page-header">
+            <div>
+                <div class="page-kicker">Meu perfil</div>
+                <h1 class="page-title">Sobre voce</h1>
+                <p class="page-subtitle">Gerencie seus dados pessoais e preferen cias.</p>
+            </div>
+            <div class="page-actions">
+                <button type="button" class="btn btn-accent" onclick='invisibleON("editar")'>Editar perfil</button>
+                <a class="btn btn-ghost" href="historico.php?qm=1">Historico</a>
+                <?php
+                    if ((int)$_SESSION['funcao'] === 3) {
+                        echo "<a class='btn btn-primary' href='colabo/cadastro_colaborador.php'>Virar colaborador</a>";
+                    }
+                ?>
+                <a class="btn btn-ghost" href="sair.php">Sair</a>
+            </div>
+        </section>
         <?php
             echo "<form action='adm/processa_editar_perfil.php' method='POST' enctype='multipart/form-data' class='hidden_two form-card' id='editar' style='text-align: left;'>
                 <input type='hidden' name='acao' value='$_SESSION[id_acesso]'>
@@ -157,37 +174,39 @@
                 <div class='hidden_sub' style='text-align: center'><input type='submit' value='Editar' onclick='return validarDados()'> <input type='reset' value='Cancelar' onclick="invisibleON('editar')"></div>
                     
             </form>
-        <div class="title" style="text-align: left">Sobre você</div>
+        <section class="info-panel">
+            <div class="section-title">Seus dados</div>
+            <p class="section-subtitle">Informacoes cadastradas no sistema.</p>
+        </section>
+        <div class="profile-hero">
         <?php
             $foto_perfil = $resultado['foto'] ? $resultado['foto'] : 'image/logoservicore.jpg';
             $foto_perfil_safe = htmlspecialchars($foto_perfil, ENT_QUOTES, 'UTF-8');
-            echo "<div class='texto'><img src='$foto_perfil_safe' alt='Foto de perfil' style='width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid #22314a;'></div>
-                <div class='texto'>Nome: $resultado[nome] </div>
-                    <div class='texto'>Cpf: $resultado[cpf] </div>
-                    <div class='botaolist'><a href='sair.php'>Sair</a></div>
-                    <div class='texto'>Estado: $resultado[estado] </div>
-                    <div class='texto'>Cidade: $resultado[cidade] </div>
-                    <div class='texto'>E-mail: $resultado[email] </div>
-                    <div class='texto'>Telefone: $resultado[telefone] </div>
-                    <div class='texto'>Data de nascimento: $data_a </div>
-                    <div class='texto'>Sexo: ";
+            echo "<div class='profile-card'>
+                <div class='profile-identity'>
+                    <div class='profile-avatar profile-avatar--sm'>
+                        <img src='$foto_perfil_safe' alt='Foto de perfil'>
+                    </div>
+                    <div>
+                        <div class='profile-title'>$resultado[nome]</div>
+                        <div class='profile-subtitle'>CPF: $resultado[cpf]</div>
+                    </div>
+                </div>
+                <div class='profile-list'>
+                    <div><span>Estado</span><strong>$resultado[estado]</strong></div>
+                    <div><span>Cidade</span><strong>$resultado[cidade]</strong></div>
+                    <div><span>E-mail</span><strong>$resultado[email]</strong></div>
+                    <div><span>Telefone</span><strong>$resultado[telefone]</strong></div>
+                    <div><span>Data de nascimento</span><strong>$data_a</strong></div>
+                    <div><span>Sexo</span><strong>";
                     switch ($resultado['sexo']) {case 'M': echo "Masculino"; break;    case 'F': echo "Feminino"; break;
-                        case 'P': echo "Você se optou por não falar"; break;    default: echo "Outro"; break; 
+                        case 'P': echo "Voce se optou por nao falar"; break;    default: echo "Outro"; break; 
                     }
-                    echo "</div>";
-        ?>
-        <div class='botaolist'><a onclick='invisibleON("editar")'>Editar</a> <a href='historico.php?qm=1'>Histórico</a>
-        <?php
-            if ((int)$_SESSION['funcao'] === 3) {
-                echo " <a href='colabo/cadastro_colaborador.php'>Virar colaborador</a>";
-            }
+                    echo "</strong></div>
+                </div>
+            </div>";
         ?>
         </div>
         </main>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
-
 </html>

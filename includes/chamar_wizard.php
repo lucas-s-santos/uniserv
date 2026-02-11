@@ -63,57 +63,101 @@
 ?>
 
 <section class="wizard" id="chamarWizard">
-    <div class="wizard-steps">
-        <div class="wizard-step is-active" data-step="1">Passo 1</div>
-        <div class="wizard-step" data-step="2">Passo 2</div>
-        <div class="wizard-step" data-step="3">Passo 3</div>
+    <div class="wizard-progress">
+        <div class="wizard-progress__track">
+            <div class="wizard-progress__step is-active" data-step="1">
+                <div class="wizard-progress__circle">1</div>
+                <div class="wizard-progress__label">Escolher servico</div>
+            </div>
+            <div class="wizard-progress__line"></div>
+            <div class="wizard-progress__step" data-step="2">
+                <div class="wizard-progress__circle">2</div>
+                <div class="wizard-progress__label">Local do chamado</div>
+            </div>
+            <div class="wizard-progress__line"></div>
+            <div class="wizard-progress__step" data-step="3">
+                <div class="wizard-progress__circle">3</div>
+                <div class="wizard-progress__label">Selecionar profissional</div>
+            </div>
+        </div>
     </div>
 
     <div class="wizard-panel is-active" data-step="1">
-        <div class="fonte">
-            <div class="dentro">
-                <div class="title" style="color: yellow">Qual servico deseja?</div>
-                <div class="campo-texto">
-                    <label>Servico</label>
-                    <select id="wizardFuncao">
-                        <option value="">Selecione o servico</option>
-                        <?php foreach ($funcoes as $funcao) { ?>
-                            <option value="<?php echo (int)$funcao['id']; ?>"><?php echo htmlspecialchars($funcao['nome'], ENT_QUOTES, 'UTF-8'); ?></option>
-                        <?php } ?>
-                    </select>
+        <div class="wizard-content">
+            <div class="wizard-intro">
+                <div class="wizard-intro__icon">🛠️</div>
+                <h2 class="wizard-intro__title">Qual servico voce precisa?</h2>
+                <p class="wizard-intro__subtitle">Escolha o tipo de servico que deseja contratar</p>
+            </div>
+            <div class="wizard-form">
+                <div class="form-card">
+                    <div class="campo-texto campo-texto--large">
+                        <label>Selecione o servico</label>
+                        <select id="wizardFuncao" class="select-large">
+                            <option value="">Escolha uma opcao...</option>
+                            <?php foreach ($funcoes as $funcao) { ?>
+                                <option value="<?php echo (int)$funcao['id']; ?>"><?php echo htmlspecialchars($funcao['nome'], ENT_QUOTES, 'UTF-8'); ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
                 </div>
-                <div class="botao">
-                    <input type="button" value="Continuar" data-action="next">
+                <div class="wizard-actions">
+                    <button type="button" class="btn btn-primary btn-large" data-action="next">
+                        Continuar →
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="wizard-panel" data-step="2">
-        <div class="fonte">
-            <div class="dentro">
-                <div class="subtitle" style="color: yellow">Cidade do chamado</div>
-                <div class="texto" id="wizardCidadeAtual"></div>
-                <div class="campo-texto">
-                    <label>Escolha a cidade</label>
-                    <select id="wizardCidade"></select>
-                </div>
-                <div class="campo-texto">
-                    <label>Digite seu endereco</label>
-                    <input type="text" id="wizardBairro" placeholder="Bairro" required>
-                    <input type="text" id="wizardRua" placeholder="Rua" required>
-                    <input type="text" id="wizardNumero" placeholder="Numero" required>
-                </div>
-                <div class="campo-texto">
-                    <label>Localizacao (opcional)</label>
-                    <div class="button-group">
-                        <input type="button" value="Usar minha localizacao" id="wizardUseLocation">
+        <div class="wizard-content">
+            <div class="wizard-intro">
+                <div class="wizard-intro__icon">📍</div>
+                <h2 class="wizard-intro__title">Onde sera o servico?</h2>
+                <p class="wizard-intro__subtitle" id="wizardCidadeAtual">Informe o local para encontrarmos profissionais proximos</p>
+            </div>
+            <div class="wizard-form">
+                <div class="form-card">
+                    <div class="form-card__section">
+                        <div class="form-card__title">Local do atendimento</div>
+                        <div class="campo-texto campo-texto--large full">
+                            <label>Cidade</label>
+                            <select id="wizardCidade" class="select-large"></select>
+                        </div>
                     </div>
-                    <div class="texto" id="wizardGeoStatus"></div>
+                    <div class="form-card__section">
+                        <div class="form-card__title">Endereco completo</div>
+                        <div class="form-grid">
+                            <div class="campo-texto">
+                                <label>Rua</label>
+                                <input type="text" id="wizardRua" placeholder="Nome da rua">
+                            </div>
+                            <div class="campo-texto">
+                                <label>Numero</label>
+                                <input type="text" id="wizardNumero" placeholder="Nº">
+                            </div>
+                            <div class="campo-texto full">
+                                <label>Bairro</label>
+                                <input type="text" id="wizardBairro" placeholder="Nome do bairro">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-card__section">
+                        <div class="form-card__title">Localizacao GPS (opcional)</div>
+                        <button type="button" class="btn btn-ghost btn-block" id="wizardUseLocation">
+                            <span>📡</span> Usar minha localizacao
+                        </button>
+                        <div class="geo-status" id="wizardGeoStatus"></div>
+                    </div>
                 </div>
-                <div class="button-group">
-                    <input type="button" value="Voltar" data-action="prev">
-                    <input type="button" value="Continuar" data-action="next">
+                <div class="wizard-actions">
+                    <button type="button" class="btn btn-ghost" data-action="prev">
+                        ← Voltar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-large" data-action="next">
+                        Continuar →
+                    </button>
                 </div>
             </div>
         </div>
@@ -121,32 +165,72 @@
 
     <div class="wizard-panel" data-step="3">
         <div class="wizard-results">
-            <div class="wizard-summary">
-                <div class="section-title">Resumo do chamado</div>
-                <div class="section-subtitle" id="wizardResumo"></div>
-                <div class="button-group">
-                    <input type="button" value="Voltar" data-action="prev">
+            <div class="results-header">
+                <div class="results-summary">
+                    <button type="button" class="btn btn-ghost btn-small" data-action="prev">
+                        ← Voltar
+                    </button>
+                    <div class="results-summary__info">
+                        <div class="results-summary__icon">📋</div>
+                        <div>
+                            <div class="results-summary__title">Resumo do chamado</div>
+                            <div class="results-summary__text" id="wizardResumo"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="wizard-filters">
-                <input type="text" id="wizardSearch" placeholder="Buscar por apelido">
-                <select id="wizardSort">
-                    <option value="preco-asc">Preco menor</option>
-                    <option value="preco-desc">Preco maior</option>
-                </select>
-                <div class="wizard-distance">
-                    <label>Raio (km)</label>
-                    <input type="number" id="wizardRadius" min="1" max="100" value="10">
+            
+            <div class="results-content">
+                <aside class="results-sidebar">
+                    <div class="filter-card">
+                        <div class="filter-card__header">
+                            <div class="filter-card__icon">🔍</div>
+                            <div class="filter-card__title">Filtros e busca</div>
+                        </div>
+                        <div class="filter-card__body">
+                            <div class="campo-texto">
+                                <label>Buscar profissional</label>
+                                <input type="text" id="wizardSearch" placeholder="Digite o apelido...">
+                            </div>
+                            <div class="campo-texto">
+                                <label>Ordenar por</label>
+                                <select id="wizardSort">
+                                    <option value="preco-asc">💰 Menor preco</option>
+                                    <option value="preco-desc">💵 Maior preco</option>
+                                </select>
+                            </div>
+                            <div class="filter-divider"></div>
+                            <div class="campo-texto">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="wizardOnlyAvailable">
+                                    <span>Apenas disponiveis</span>
+                                </label>
+                            </div>
+                            <div class="filter-divider"></div>
+                            <div class="campo-texto">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="wizardDistanceFilter">
+                                    <span>Filtrar por distancia</span>
+                                </label>
+                            </div>
+                            <div class="campo-texto">
+                                <label>Raio maximo (km)</label>
+                                <input type="number" id="wizardRadius" min="1" max="100" value="10">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="map-card">
+                        <div class="map-card__header">🗺️ Mapa dos profissionais</div>
+                        <div class="wizard-map" id="wizardMap"></div>
+                    </div>
+                </aside>
+                <div class="results-main">
+                    <div class="results-main__header">
+                        <div class="results-count" id="resultsCount">Carregando profissionais...</div>
+                    </div>
+                    <div class="wizard-cards" id="wizardCards"></div>
                 </div>
-                <label class="wizard-checkbox">
-                    <input type="checkbox" id="wizardOnlyAvailable"> Mostrar apenas disponiveis
-                </label>
-                <label class="wizard-checkbox">
-                    <input type="checkbox" id="wizardDistanceFilter"> Filtrar por distancia
-                </label>
             </div>
-            <div class="wizard-map" id="wizardMap"></div>
-            <div class="wizard-cards" id="wizardCards"></div>
         </div>
     </div>
 </section>
@@ -298,8 +382,10 @@
             wizard.querySelectorAll(".wizard-panel").forEach(function (panel) {
                 panel.classList.toggle("is-active", Number(panel.dataset.step) === step);
             });
-            wizard.querySelectorAll(".wizard-step").forEach(function (item) {
-                item.classList.toggle("is-active", Number(item.dataset.step) === step);
+            wizard.querySelectorAll(".wizard-progress__step").forEach(function (item) {
+                var itemStep = Number(item.dataset.step);
+                item.classList.toggle("is-active", itemStep === step);
+                item.classList.toggle("is-completed", itemStep < step);
             });
         }
 
@@ -468,82 +554,113 @@
                 lista.sort(function (a, b) { return Number(a.valorHora) - Number(b.valorHora); });
             }
 
+            var resultsCount = document.getElementById("resultsCount");
+            if (resultsCount) {
+                resultsCount.textContent = lista.length + " profissional(is) encontrado(s)";
+            }
+
             if (!lista.length) {
                 var empty = document.createElement("div");
                 empty.className = "collab-empty";
-                empty.textContent = "Nenhum colaborador encontrado para esta cidade e funcao.";
+                empty.innerHTML = "<div class='collab-empty__icon'>🔍</div><div class='collab-empty__text'>Nenhum profissional encontrado</div><p class='collab-empty__hint'>Tente ajustar os filtros ou escolher outra cidade</p>";
                 cardsContainer.appendChild(empty);
                 return;
             }
 
             lista.forEach(function (item) {
                 var card = document.createElement("div");
-                card.className = "wizard-card";
-
-                var header = document.createElement("div");
-                header.className = "wizard-card__header";
-
-                var name = document.createElement("div");
-                name.className = "wizard-card__title";
-                name.textContent = item.apelido;
-
-                var price = document.createElement("div");
-                price.className = "wizard-card__price";
-                price.textContent = "R$ " + item.valorHora + " / hora";
-
-                header.appendChild(name);
-                header.appendChild(price);
-
-                var meta = document.createElement("div");
-                meta.className = "wizard-card__meta";
-                meta.textContent = item.cidade + " - " + item.estado;
-
-                if (!item.hasPix && !item.acceptsCash && !item.acceptsCard) {
-                    var warn = document.createElement("div");
-                    warn.className = "wizard-card__meta";
-                    warn.textContent = "Aviso: colaborador sem pagamento configurado.";
-                    card.appendChild(warn);
+                card.className = "pro-card";
+                
+                var isUnavailable = !item.disponivel || item.ocupado || item.self;
+                var noPayment = !item.hasPix && !item.acceptsCash && !item.acceptsCard;
+                if (isUnavailable || noPayment) {
+                    card.classList.add("pro-card--disabled");
                 }
 
-                var status = document.createElement("span");
-                status.className = "status-badge";
+                var header = document.createElement("div");
+                header.className = "pro-card__header";
+
+                var avatar = document.createElement("div");
+                avatar.className = "pro-card__avatar";
+                var initials = item.apelido.substring(0, 2).toUpperCase();
+                avatar.textContent = initials;
+
+                var info = document.createElement("div");
+                info.className = "pro-card__info";
+
+                var name = document.createElement("div");
+                name.className = "pro-card__name";
+                name.textContent = item.apelido;
+
+                var location = document.createElement("div");
+                location.className = "pro-card__location";
+                location.innerHTML = "📍 " + item.cidade + ", " + item.estado;
+
+                info.appendChild(name);
+                info.appendChild(location);
+                header.appendChild(avatar);
+                header.appendChild(info);
+
+                var price = document.createElement("div");
+                price.className = "pro-card__price";
+                price.innerHTML = "<div class='pro-card__price-label'>Valor/hora</div><div class='pro-card__price-value'>R$ " + item.valorHora + "</div>";
+
+                var meta = document.createElement("div");
+                meta.className = "pro-card__meta";
+                
+                if (item._dist !== null && item._dist !== undefined) {
+                    var dist = document.createElement("div");
+                    dist.className = "pro-card__meta-item";
+                    dist.innerHTML = "📏 <span>" + item._dist.toFixed(1) + " km</span>";
+                    meta.appendChild(dist);
+                }
+
+                var payment = document.createElement("div");
+                payment.className = "pro-card__meta-item";
+                var paymentMethods = [];
+                if (item.hasPix) paymentMethods.push("PIX");
+                if (item.acceptsCash) paymentMethods.push("💵");
+                if (item.acceptsCard) paymentMethods.push("💳");
+                payment.innerHTML = "💰 <span>" + (paymentMethods.length ? paymentMethods.join(", ") : "Sem pagamento") + "</span>";
+                meta.appendChild(payment);
+
+                var status = document.createElement("div");
+                status.className = "pro-card__status";
                 if (!item.disponivel) {
-                    status.classList.add("status-badge--canceled");
-                    status.textContent = "Indisponivel";
+                    status.className += " pro-card__status--unavailable";
+                    status.textContent = "❌ Indisponível";
                 } else if (item.ocupado) {
-                    status.classList.add("status-badge--pending");
-                    status.textContent = "Em servico";
+                    status.className += " pro-card__status--busy";
+                    status.textContent = "⏳ Em serviço";
                 } else if (item.self) {
-                    status.classList.add("status-badge--active");
-                    status.textContent = "Seu perfil";
+                    status.className += " pro-card__status--self";
+                    status.textContent = "👤 Seu perfil";
+                } else if (noPayment) {
+                    status.className += " pro-card__status--warning";
+                    status.textContent = "⚠️ Sem pagamento";
                 } else {
-                    status.classList.add("status-badge--done");
-                    status.textContent = "Disponivel";
+                    status.className += " pro-card__status--available";
+                    status.textContent = "✓ Disponível";
                 }
 
                 var actions = document.createElement("div");
-                actions.className = "wizard-card__actions";
-                if (!item.disponivel || item.ocupado || item.self || (!item.hasPix && !item.acceptsCash && !item.acceptsCard)) {
-                    var disabled = document.createElement("span");
-                    disabled.className = "wizard-card__hint";
-                    disabled.textContent = !item.hasPix && !item.acceptsCash && !item.acceptsCard ? "Sem pagamento configurado" : "Nao disponivel agora";
-                    actions.appendChild(disabled);
+                actions.className = "pro-card__actions";
+                if (isUnavailable || noPayment) {
+                    var reason = document.createElement("div");
+                    reason.className = "pro-card__hint";
+                    reason.textContent = noPayment ? "Este profissional não configurou formas de pagamento" : "Profissional não disponível no momento";
+                    actions.appendChild(reason);
                 } else {
                     var link = document.createElement("a");
-                    link.className = "btn btn-small btn-primary";
-                    link.textContent = "Ver perfil";
+                    link.className = "btn btn-primary btn-block";
+                    link.innerHTML = "Ver perfil e solicitar →";
                     link.href = buildPerfilLink(item.idTrafun);
                     actions.appendChild(link);
                 }
 
                 card.appendChild(header);
+                card.appendChild(price);
                 card.appendChild(meta);
-                if (item._dist !== null && item._dist !== undefined) {
-                    var dist = document.createElement("div");
-                    dist.className = "wizard-card__meta";
-                    dist.textContent = "Distancia: " + item._dist.toFixed(1) + " km";
-                    card.appendChild(dist);
-                }
                 card.appendChild(status);
                 card.appendChild(actions);
                 cardsContainer.appendChild(card);

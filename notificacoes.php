@@ -48,11 +48,20 @@ $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
     <?php include 'menu.php'; ?>
     <div class="menu-spacer"></div>
     <main class="page">
-        <div class="title">Notificacoes</div>
-        <form method="POST" class="button-group">
-            <input type="hidden" name="marcar_todas" value="1">
-            <button type="submit">Marcar todas como lidas</button>
-        </form>
+        <section class="page-header">
+            <div>
+                <div class="page-kicker">Central</div>
+                <h1 class="page-title">Notificacoes</h1>
+                <p class="page-subtitle">Acompanhe suas notificacoes e marque como lidas.</p>
+            </div>
+            <div class="page-actions">
+                <form method="POST">
+                    <input type="hidden" name="marcar_todas" value="1">
+                    <button type="submit" class="btn btn-ghost">Marcar todas como lidas</button>
+                </form>
+            </div>
+        </section>
+        <section class="service-list">
         <?php
             $tem = false;
             while ($linha = $notificacoes->fetch_assoc()) {
@@ -81,9 +90,10 @@ $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
                 echo "</div>";
             }
             if (!$tem) {
-                echo "<div class='texto'>Sem notificacoes no momento.</div>";
+                echo "<div class='collab-empty'>Sem notificacoes no momento.</div>";
             }
         ?>
+        </section>
     </main>
 </body>
 </html>
