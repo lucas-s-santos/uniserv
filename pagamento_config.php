@@ -116,33 +116,54 @@
                 </div>
             </section>
 
-            <div class="fonte">
-                <div class="dentro">
-                    <form method="POST" action="pagamento_config.php">
-                        <div class="section-title">Metodos aceitos</div>
-                        <label class="wizard-checkbox">
-                            <input type="checkbox" name="aceita_pix" <?php echo $aceita_pix ? 'checked' : ''; ?>> Aceito PIX
-                        </label>
-                        <label class="wizard-checkbox" style="margin-left: 12px;">
-                            <input type="checkbox" name="aceita_dinheiro" <?php echo $aceita_dinheiro ? 'checked' : ''; ?>> Aceito dinheiro
-                        </label>
-                        <label class="wizard-checkbox" style="margin-left: 12px;">
-                            <input type="checkbox" name="aceita_cartao_presencial" <?php echo $aceita_cartao_presencial ? 'checked' : ''; ?>> Cartao presencial
-                        </label>
-
-                        <div class="campo-texto" style="margin-top: 12px;">
-                            <label>Preferencia</label>
-                            <select name="pagamento_preferido">
-                                <option value="" <?php echo $pagamento_preferido === '' ? 'selected' : ''; ?>>Nao definir</option>
-                                <option value="pix" <?php echo $pagamento_preferido === 'pix' ? 'selected' : ''; ?>>PIX</option>
-                                <option value="dinheiro" <?php echo $pagamento_preferido === 'dinheiro' ? 'selected' : ''; ?>>Dinheiro</option>
-                                <option value="cartao" <?php echo $pagamento_preferido === 'cartao' ? 'selected' : ''; ?>>Cartao presencial</option>
-                                <option value="qualquer" <?php echo $pagamento_preferido === 'qualquer' ? 'selected' : ''; ?>>Qualquer</option>
-                            </select>
+            <form method="POST" action="pagamento_config.php" class="payment-config">
+                <div class="payment-config__card">
+                    <div class="payment-config__header">
+                        <div>
+                            <div class="payment-config__kicker">Metodos aceitos</div>
+                            <h2>Como voce deseja receber?</h2>
+                            <p>Ative as opcoes e escolha sua preferencia principal.</p>
                         </div>
+                    </div>
+                    <div class="payment-config__options">
+                        <label class="payment-toggle">
+                            <input type="checkbox" name="aceita_pix" <?php echo $aceita_pix ? 'checked' : ''; ?>>
+                            <span class="payment-toggle__label">PIX</span>
+                            <span class="payment-toggle__hint">Instantaneo e pratico</span>
+                        </label>
+                        <label class="payment-toggle">
+                            <input type="checkbox" name="aceita_dinheiro" <?php echo $aceita_dinheiro ? 'checked' : ''; ?>>
+                            <span class="payment-toggle__label">Dinheiro</span>
+                            <span class="payment-toggle__hint">Pagamento presencial</span>
+                        </label>
+                        <label class="payment-toggle">
+                            <input type="checkbox" name="aceita_cartao_presencial" <?php echo $aceita_cartao_presencial ? 'checked' : ''; ?>>
+                            <span class="payment-toggle__label">Cartao presencial</span>
+                            <span class="payment-toggle__hint">Debito ou credito</span>
+                        </label>
+                    </div>
+                    <div class="payment-config__field">
+                        <label>Preferencia</label>
+                        <select name="pagamento_preferido">
+                            <option value="" <?php echo $pagamento_preferido === '' ? 'selected' : ''; ?>>Nao definir</option>
+                            <option value="pix" <?php echo $pagamento_preferido === 'pix' ? 'selected' : ''; ?>>PIX</option>
+                            <option value="dinheiro" <?php echo $pagamento_preferido === 'dinheiro' ? 'selected' : ''; ?>>Dinheiro</option>
+                            <option value="cartao" <?php echo $pagamento_preferido === 'cartao' ? 'selected' : ''; ?>>Cartao presencial</option>
+                            <option value="qualquer" <?php echo $pagamento_preferido === 'qualquer' ? 'selected' : ''; ?>>Qualquer</option>
+                        </select>
+                    </div>
+                </div>
 
-                        <div class="section-title" style="margin-top: 12px;">PIX</div>
-                        <div class="campo-texto">
+                <div class="payment-config__grid">
+                    <div class="payment-config__card">
+                        <div class="payment-config__header">
+                            <div>
+                                <div class="payment-config__kicker">PIX</div>
+                                <h2>Chave para recebimento</h2>
+                                <p>Informe a chave correta para pagamentos instantaneos.</p>
+                            </div>
+                        </div>
+                        <div class="payment-config__field">
                             <label>Tipo de PIX</label>
                             <select name="pix_tipo">
                                 <option value="" <?php echo $pix_tipo === '' ? 'selected' : ''; ?>>Escolha</option>
@@ -152,23 +173,36 @@
                                 <option value="aleatoria" <?php echo $pix_tipo === 'aleatoria' ? 'selected' : ''; ?>>Chave aleatoria</option>
                             </select>
                         </div>
-                        <div class="campo-texto">
+                        <div class="payment-config__field">
                             <label>Chave PIX</label>
                             <input type="text" name="pix_chave" placeholder="Digite sua chave PIX" value="<?php echo htmlspecialchars($pix_chave, ENT_QUOTES, 'UTF-8'); ?>">
                         </div>
+                    </div>
 
-                        <div class="section-title" style="margin-top: 12px;">Mensagem para o cliente</div>
-                        <div class="campo-texto">
+                    <div class="payment-config__card">
+                        <div class="payment-config__header">
+                            <div>
+                                <div class="payment-config__kicker">Mensagem</div>
+                                <h2>Recado para o cliente</h2>
+                                <p>Personalize o contato depois do servico.</p>
+                            </div>
+                        </div>
+                        <div class="payment-config__field">
                             <label>Mensagem (opcional)</label>
                             <input type="text" name="mensagem_pagamento" placeholder="Ex: Obrigado pelo servico!" value="<?php echo htmlspecialchars($mensagem_pagamento, ENT_QUOTES, 'UTF-8'); ?>">
                         </div>
-
-                        <div class="button-group" style="margin-top: 12px;">
-                            <button type="submit" class="btn btn-primary">Salvar configuracoes</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <div class="payment-config__card payment-config__save">
+                    <div>
+                        <div class="payment-config__kicker">Salvar</div>
+                        <h2>Pronto para receber</h2>
+                        <p>Revise as informacoes e confirme as configuracoes.</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large">Salvar configuracoes</button>
+                </div>
+            </form>
         </main>
     </body>
 </html>
