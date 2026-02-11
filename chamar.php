@@ -18,29 +18,23 @@
             <link rel="stylesheet" href="css/estrutura_geral.css">
                 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
                 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-            <title>Página principal</title>
+            <title>Solicitar Servico - Servicos Relampagos</title>
     </head>
     
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-        <main class="page">
-            <section class="page-header">
-                <div>
-                    <div class="page-kicker">Chamar servico</div>
-                    <h1 class="page-title">Abra seu chamado em 3 passos</h1>
-                    <p class="page-subtitle">Descreva o servico, informe a cidade e escolha o profissional ideal.</p>
-                </div>
-                <div class="page-actions">
-                    <a class="btn btn-ghost" href="servicos.php">Ver servicos</a>
-                    <a class="btn btn-primary" href="historico.php">Historico</a>
-                </div>
-            </section>
-            <?php include 'includes/chamar_wizard.php'; ?>
-        </main>
+        <section class="page-hero">
+            <div class="page-hero__content">
+                <div class="page-hero__badge">🚀 Rapido e Facil</div>
+                <h1 class="page-hero__title">Solicite seu servico</h1>
+                <p class="page-hero__subtitle">Preencha 3 passos simples e conecte-se com os melhores profissionais da sua regiao</p>
+            </div>
+            <div class="page-hero__actions">
+                <a class="btn btn-ghost" href="servicos.php">📋 Meus servicos</a>
+                <a class="btn btn-primary" href="historico.php">⏱️ Historico</a>
+            </div>
+        </section>
+        <?php include 'includes/chamar_wizard.php'; ?>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

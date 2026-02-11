@@ -50,8 +50,4 @@
         </form>    
         </main>
     </body>
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
-
 </html>

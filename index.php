@@ -21,62 +21,141 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-            <section class="hero">
-                <div class="hero-content">
-                    <div class="eyebrow">Servicos relampago</div>
-                    <h1 class="hero-title">Uniserv conecta voce ao servico certo, na sua cidade</h1>
-                    <p class="hero-subtitle">Encontre profissionais disponiveis, acompanhe pedidos ativos e mantenha seu historico organizado em um so lugar.</p>
-                    <div class="hero-actions">
-                        <?php if (isset($_SESSION['cpf'])) { ?>
-                            <a class="btn btn-accent" href="chamar.php">Chamar servico</a>
-                            <a class="btn" href="perfil.php">Meu perfil</a>
-                        <?php } else { ?>
-                            <a class="btn btn-accent" href="cadastro.php">Criar conta</a>
-                            <a class="btn btn-primary" href="login.php">Entrar</a>
-                        <?php } ?>
+            <!-- HERO SECTION -->
+            <section class="home-hero">
+                <div class="home-hero-background">
+                    <div class="hero-shape hero-shape-1"></div>
+                    <div class="hero-shape hero-shape-2"></div>
+                    <div class="hero-shape hero-shape-3"></div>
+                </div>
+                <div class="home-hero-wrapper">
+                    <div class="hero-content-box">
+                        <span class="hero-badge">⚡ Conectando Profissionais</span>
+                        <h1 class="hero-title-big">Serviços incríveis a um clique de distância</h1>
+                        <p class="hero-description">Uniserv conecta você ao profissional certo na sua cidade. Rápido, confiável e sem complicações.</p>
+                        <div class="hero-actions-group">
+                            <?php if (isset($_SESSION['cpf'])) { ?>
+                                <a class="btn btn-primary btn-hero" href="chamar.php">
+                                    <span>⚡ Chamar Serviço</span>
+                                </a>
+                                <a class="btn btn-ghost btn-hero" href="perfil.php">
+                                    <span>👤 Meu Perfil</span>
+                                </a>
+                            <?php } else { ?>
+                                <a class="btn btn-primary btn-hero" href="cadastro.php">
+                                    <span>🚀 Criar Conta</span>
+                                </a>
+                                <a class="btn btn-ghost btn-hero" href="login.php">
+                                    <span>🔓 Entrar</span>
+                                </a>
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="hero-logo-container">
+                            <img class="hero-logo-img" src="image/logoservicore.jpg" alt="Uniserv">
+                            <div class="logo-glow"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="hero-media">
-                    <img class="hero-logo" src="image/logoservicore.jpg" alt="Logo Uniserv">
+            </section>
+
+            <!-- BENEFITS SECTION -->
+            <section class="home-benefits">
+                <div class="benefits-header">
+                    <h2>Por que escolher Uniserv?</h2>
+                    <p>Tudo que você precisa para solicitar ou oferecer serviços em um único lugar</p>
+                </div>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">⚡</div>
+                        <h3>Super Rápido</h3>
+                        <p>Crie um chamado em poucos segundos. Sem burocracia, sem complicação.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="benefit-icon">👁️</div>
+                        <h3>Acompanhamento Real</h3>
+                        <p>Veja em tempo real o status do seu serviço de início até conclusão.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="benefit-icon">🔒</div>
+                        <h3>100% Seguro</h3>
+                        <p>Seus dados protegidos com segurança em primeiro lugar.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="benefit-icon">📊</div>
+                        <h3>Histórico Completo</h3>
+                        <p>Mantenha um registro organizado de todos os seus serviços.</p>
+                    </div>
                 </div>
             </section>
 
-            <section class="features">
-                <article class="feature-card">
-                    <h3>Fluxo simples</h3>
-                    <p>Abra um chamado em poucos passos, sem telas confusas ou excesso de popups.</p>
-                </article>
-                <article class="feature-card">
-                    <h3>Informacao clara</h3>
-                    <p>Acompanhe servicos ativos, status e historico com visual direto.</p>
-                </article>
-                <article class="feature-card">
-                    <h3>Perfis organizados</h3>
-                    <p>Divisao por funcao com menus e acessos adequados para cada publico.</p>
-                </article>
+            <!-- HOW IT WORKS -->
+            <section class="home-process">
+                <div class="process-header">
+                    <h2>Como funciona?</h2>
+                    <p>3 passos simples para conectar com profissionais incríveis</p>
+                </div>
+                <div class="process-steps">
+                    <div class="process-step">
+                        <div class="step-number-circle">
+                            <span>1</span>
+                        </div>
+                        <div class="step-content">
+                            <h3>Crie sua conta</h3>
+                            <p>Cadastre-se como cliente ou colaborador e veja recursos personalizados para você.</p>
+                            <div class="step-icon">📝</div>
+                        </div>
+                    </div>
+
+                    <div class="step-connector">
+                        <svg width="100%" height="60" viewBox="0 0 100 60" preserveAspectRatio="none">
+                            <path d="M 0 30 Q 50 0, 100 30" stroke="var(--c-primary)" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+                        </svg>
+                    </div>
+
+                    <div class="process-step">
+                        <div class="step-number-circle">
+                            <span>2</span>
+                        </div>
+                        <div class="step-content">
+                            <h3>Encontre e contrate</h3>
+                            <p>Procure pelo serviço que precisa ou aceite novos chamados como profissional.</p>
+                            <div class="step-icon">🔍</div>
+                        </div>
+                    </div>
+
+                    <div class="step-connector">
+                        <svg width="100%" height="60" viewBox="0 0 100 60" preserveAspectRatio="none">
+                            <path d="M 0 30 Q 50 0, 100 30" stroke="var(--c-primary)" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+                        </svg>
+                    </div>
+
+                    <div class="process-step">
+                        <div class="step-number-circle">
+                            <span>3</span>
+                        </div>
+                        <div class="step-content">
+                            <h3>Finalize e avalie</h3>
+                            <p>Confirme a entrega, registre comentários e mantenha seu histórico completo.</p>
+                            <div class="step-icon">✓</div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <section class="steps">
-                <article class="step-card">
-                    <span class="step-number">PASSO 1</span>
-                    <h3>Crie ou acesse sua conta</h3>
-                    <p>Entre como cliente, colaborador ou administrador para ver os recursos certos.</p>
-                </article>
-                <article class="step-card">
-                    <span class="step-number">PASSO 2</span>
-                    <h3>Abra ou aceite um chamado</h3>
-                    <p>Escolha o servico, envie os detalhes e acompanhe o andamento.</p>
-                </article>
-                <article class="step-card">
-                    <span class="step-number">PASSO 3</span>
-                    <h3>Finalize e avalie</h3>
-                    <p>Confirme a entrega, registre comentarios e mantenha o historico completo.</p>
-                </article>
+            <!-- CTA SECTION -->
+            <section class="home-cta">
+                <div class="cta-content">
+                    <h2>Pronto para começar?</h2>
+                    <p>Junte-se a milhares de pessoas que já confiam na Uniserv</p>
+                    <?php if (!isset($_SESSION['cpf'])) { ?>
+                    <a class="btn btn-accent btn-large" href="cadastro.php">Criar minha conta gratuitamente</a>
+                    <?php } else { ?>
+                    <a class="btn btn-accent btn-large" href="chamar.php">Solicitar um serviço agora</a>
+                    <?php } ?>
+                </div>
             </section>
         </main>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

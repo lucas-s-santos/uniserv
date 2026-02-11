@@ -353,8 +353,6 @@
     <body class="centralizar <?php echo $themeClass; ?>">
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
-        <main class="page">
-        <br>
         <?php 
             if (isset($_GET['servic'])) {
                 $comando_nome = "SELECT B.nome_func as 'funcao', A.valor_atual, A.funcoes_id_funcoes, A.status_etapa, A.ativo FROM servico A INNER JOIN funcoes B ON A.funcoes_id_funcoes = B.id_funcoes WHERE id_servico = '$_GET[servic]'";
@@ -402,9 +400,13 @@
                 $etapa_next_label = $next_step ? servico_etapa_label($next_step) : '';
 
                 echo "<div class='hidden' id='hidden65'>
-                    <div class='title'>Finalizar serviço</div>
-                    <label>Função: $nome_funcao[funcao].</label>  <label>Valor por Hora: <b id='conta1'>$nome_funcao[valor_atual]</b>.</label> <br>
-                    <label>Etapa atual: <b>{$etapa_label}</b></label> <br>";
+                    <div class='inside-pop'>
+                    <div class='title'>Finalizar servico</div>
+                    <div class='form-grid'>
+                        <div class='campo-texto'><label>Funcao</label><input type='text' value='$nome_funcao[funcao]' disabled></div>
+                        <div class='campo-texto'><label>Valor por Hora</label><input type='text' id='conta1' value='$nome_funcao[valor_atual]' disabled></div>
+                        <div class='campo-texto full'><label>Etapa atual</label><input type='text' value='{$etapa_label}' disabled></div>
+                    </div>";
                 if ($next_step) {
                     echo "<form action='servicos.php' method='POST' style='margin: 10px 0;'>
                             <input type='hidden' name='acao' value='etapa'>
@@ -413,21 +415,32 @@
                             <button type='submit' class='btn btn-ghost btn-small'>Avancar para: {$etapa_next_label}</button>
                         </form>";
                 }
-                echo "<hr style='margin: 16px 0; border-color: var(--c-border);'>
+                echo "<hr>
                     <form action='servicos.php' method='POST' enctype='multipart/form-data'>
-                        <label>Quanto tempo durou?(responda em minutos)</label> <br>
                         <input type='hidden' name='acao' value='finalizar'>
                         <input type='hidden' value='$_GET[servic]' name='id_servico'>
-                        <input type='text' name='tempo' id='conta2' placeholder='TEMPO' onchange='seiLa()'> <br>
-                        <label>Valor total calculado: <b id='conta3'>Digite o tempo</b></label>
+                        <div class='form-grid'>
+                            <div class='campo-texto'>
+                                <label>Quanto tempo durou? (em minutos)</label>
+                                <input type='text' name='tempo' id='conta2' placeholder='Tempo em minutos' onchange='seiLa()'>
+                            </div>
+                            <div class='campo-texto'>
+                                <label>Valor total calculado</label>
+                                <input type='text' id='conta3' value='Digite o tempo' disabled>
+                            </div>
+                        </div>
                         <div style='margin: 12px 0;'>
                             {$checklist_html}
                         </div>
-                        <div style='margin: 12px 0;'>
-                            <label>Foto antes:</label><br>
-                            <input type='file' name='foto_antes' accept='image/png, image/jpeg' required> <br>
-                            <label>Foto depois:</label><br>
-                            <input type='file' name='foto_depois' accept='image/png, image/jpeg' required> <br>
+                        <div class='form-grid'>
+                            <div class='campo-texto'>
+                                <label>Foto antes</label>
+                                <input type='file' name='foto_antes' accept='image/png, image/jpeg' required>
+                            </div>
+                            <div class='campo-texto'>
+                                <label>Foto depois</label>
+                                <input type='file' name='foto_depois' accept='image/png, image/jpeg' required>
+                            </div>
                         </div>
                         <div class='hidden_sub'>
                             <label style='display: block; margin-bottom: 8px;'>
@@ -436,15 +449,11 @@
                             <input type='submit' value='Confirmar' onclick='return confirmeIsso()'>
                         </div>
                     </form>
+                    </div>
                 </div>";
                 echo "<script>invisibleON('hidden65');</script>";
             }
         ?>
         <?php include 'includes/servicos_lista.php'; ?>
-        </main>
     </body>
-
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

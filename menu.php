@@ -115,6 +115,7 @@
         if ($role === 2) {
             $menuLinks[] = ['href' => 'colabo/colaborador.php', 'label' => 'Painel Colaborador'];
             $menuLinks[] = ['href' => 'historico.php?qm=2', 'label' => 'Historico'];
+            $menuLinks[] = ['href' => 'pagamento_config.php', 'label' => 'Pagamento'];
         }
         if ($role === 3) {
             $menuLinks[] = ['href' => 'chamar.php', 'label' => 'Chamar'];
@@ -217,20 +218,7 @@
                         $notifLabel = $alert_count > 0 ? "Notificacoes ({$alert_count})" : 'Notificacoes';
                         echo "<a href='".htmlspecialchars($notifLink, ENT_QUOTES, 'UTF-8')."' target='_parent' class='{$notifClass}' aria-label='".htmlspecialchars($notifLabel, ENT_QUOTES, 'UTF-8')."' title='".htmlspecialchars($notifLabel, ENT_QUOTES, 'UTF-8')."'><span class='notif-icon'>&#128276;</span>{$notifBadge}</a>";
                         $perfilLink = $baseUrl === '/' ? '/perfil.php' : $baseUrl . '/perfil.php';
-                        $historicoLink = $baseUrl === '/' ? '/historico.php' : $baseUrl . '/historico.php';
-                        $sairLink = $baseUrl === '/' ? '/sair.php' : $baseUrl . '/sair.php';
-                        $pagamentoLink = $baseUrl === '/' ? '/pagamento_config.php' : $baseUrl . '/pagamento_config.php';
-                        $historicoLink .= $role === 2 ? '?qm=2' : '?qm=1';
-                        echo "<div class='menu-dropdown'>
-                                <button type='button' class='menu-profile' aria-haspopup='true' aria-expanded='false'>{$apelido}</button>
-                                <div class='menu-dropdown__menu'>
-                                    <a href='".htmlspecialchars($perfilLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Perfil</a>
-                                    " . ($role === 2 ? "<a href='".htmlspecialchars($pagamentoLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Pagamento</a>" : "") . "
-                                    <a href='".htmlspecialchars($historicoLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Historico</a>
-                                    <a href='".htmlspecialchars($notifLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Notificacoes</a>
-                                    <a href='".htmlspecialchars($sairLink, ENT_QUOTES, 'UTF-8')."' target='_parent'>Sair</a>
-                                </div>
-                            </div>";
+                        echo "<a href='".htmlspecialchars($perfilLink, ENT_QUOTES, 'UTF-8')."' target='_parent' class='menu-profile'>{$apelido}</a>";
                     } else {
                         render_menu_item('cadastro.php', 'Cadastrar');
                         render_menu_item('login.php', 'Entrar');

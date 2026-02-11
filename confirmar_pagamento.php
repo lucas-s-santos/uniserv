@@ -68,40 +68,116 @@
         <?php include 'menu.php'; ?>
         <div class="menu-spacer"></div>
         <main class="page">
-            <section class="page-header">
-                <div>
-                    <div class="page-kicker">Confirmacao</div>
-                    <h1 class="page-title">Confirmar pagamento</h1>
-                    <p class="page-subtitle">Verifique o comprovante antes de concluir.</p>
-                </div>
-                <div class="page-actions">
-                    <a class="btn btn-ghost" href="servicos.php">Voltar</a>
+            <!-- HERO SECTION -->
+            <section class="confirm-hero">
+                <div class="confirm-hero-content">
+                    <div class="confirm-icon">💰</div>
+                    <h1 class="confirm-title">Confirme o Pagamento</h1>
+                    <p class="confirm-subtitle">Verifique o comprovante e finalize a confirmação do pagamento do cliente</p>
                 </div>
             </section>
 
-            <div class="fonte">
-                <div class="dentro">
-                    <div class="section-title">Dados do servico</div>
-                    <div class="texto">Cliente: <?php echo htmlspecialchars($servico['nome_cliente'], ENT_QUOTES, 'UTF-8'); ?></div>
-                    <div class="texto">Valor final: <b>R$ <?php echo $valor_fmt; ?></b></div>
+            <div class="confirm-container">
+                <!-- SERVICE INFO CARD -->
+                <div class="confirm-card service-info-card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Informações do Serviço</h2>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Cliente</span>
+                            <span class="info-value"><?php echo htmlspecialchars($servico['nome_cliente'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Valor Final</span>
+                            <span class="info-value amount">R$ <?php echo $valor_fmt; ?></span>
+                        </div>
+                    </div>
 
-                    <div class="section-title" style="margin-top: 16px;">Comprovante</div>
+                    <div class="status-badge success">
+                        <span class="status-indicator">✓</span>
+                        <span class="status-text">Pagamento recebido</span>
+                    </div>
+                </div>
+
+                <!-- RECEIPT VERIFICATION -->
+                <div class="confirm-card receipt-card">
+                    <div class="card-header">
+                        <h2 class="card-title">📸 Comprovante de Pagamento</h2>
+                    </div>
+
                     <?php if ($servico['pagamento_comprovante'] === 'presencial') { ?>
-                        <div class="texto">Pagamento informado como presencial.</div>
+                        <div class="receipt-content presencial">
+                            <div class="presencial-icon">💵</div>
+                            <p class="presencial-text">Pagamento informado como <strong>Presencial</strong></p>
+                            <p class="presencial-subtitle">O cliente confirmou o pagamento na hora do atendimento</p>
+                        </div>
                     <?php } else { ?>
-                        <a class="btn btn-ghost btn-small" href="<?php echo htmlspecialchars($servico['pagamento_comprovante'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank">Ver comprovante</a>
+                        <div class="receipt-content">
+                            <p class="receipt-instruction">Vizualize o comprovante enviado pelo cliente:</p>
+                            <a class="btn btn-ghost receipt-link" href="<?php echo htmlspecialchars($servico['pagamento_comprovante'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank">
+                                🔍 Ver Comprovante
+                            </a>
+                        </div>
                     <?php } ?>
+                </div>
 
-                    <form action="servicos.php" method="POST" style="margin-top: 12px;">
+                <!-- CONFIRMATION SECTION -->
+                <div class="confirm-card action-card">
+                    <div class="card-header">
+                        <h2 class="card-title">✅ Confirmar Recebimento</h2>
+                        <p class="card-subtitle">Ao confirmar, você reconhece que recebeu o pagamento</p>
+                    </div>
+
+                    <form action="servicos.php" method="POST" class="confirm-form">
                         <input type="hidden" name="acao" value="confirmar_pagamento">
                         <input type="hidden" name="id_servico" value="<?php echo (int)$servico['id_servico']; ?>">
-                        <button type="submit" class="btn btn-primary btn-small">Confirmar pagamento</button>
+                        
+                        <div class="form-notice">
+                            <span class="notice-icon">⚠️</span>
+                            <p>Confirme apenas se recebeu o pagamento. Esta ação não pode ser desfeita.</p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-full btn-large confirm-btn">
+                                <span>✓ Confirmar Pagamento</span>
+                            </button>
+                            <a href="servicos.php" class="btn btn-ghost btn-full">
+                                ← Voltar para Serviços
+                            </a>
+                        </div>
                     </form>
+                </div>
+
+                <!-- TIMELINE -->
+                <div class="confirm-timeline">
+                    <h3>Próximas etapas</h3>
+                    <div class="timeline">
+                        <div class="timeline-item completed">
+                            <div class="timeline-status">✓</div>
+                            <div class="timeline-text">
+                                <p class="timeline-title">Pagamento Enviado</p>
+                                <p class="timeline-desc">Cliente enviou comprovante</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item current">
+                            <div class="timeline-status">📍</div>
+                            <div class="timeline-text">
+                                <p class="timeline-title">Você está aqui</p>
+                                <p class="timeline-desc">Confirme o recebimento</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-status">4</div>
+                            <div class="timeline-text">
+                                <p class="timeline-title">Serviço Finalizado</p>
+                                <p class="timeline-desc">Transação concluída com sucesso</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </body>
-    <footer class="footer">
-        <?php include 'pe.html'; ?>
-    </footer>
 </html>

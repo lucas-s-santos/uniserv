@@ -32,21 +32,24 @@
         $email = $_POST['email'];
         $senha = trim($_POST['senha']);
         $genero = $_POST['genero'];
+        $funcao = $_POST['funcao'];
         $data = $_POST['data_ani'];
 
         if ($senha !== '') {
             $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, senha=?, sexo=?, atualizar='1', data_ani=? WHERE id_registro=?");
-            $stmt->bind_param("ssssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $senha_hash, $genero, $data, $id);
+            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, senha=?, sexo=?, funcao=?, atualizar='1', data_ani=? WHERE id_registro=?");
+            $stmt->bind_param("sssssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $senha_hash, $genero, $funcao, $data, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, sexo=?, atualizar='1', data_ani=? WHERE id_registro=?");
-            $stmt->bind_param("ssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $genero, $data, $id);
+            $stmt = $conn->prepare("UPDATE registro SET nome=?, apelido=?, estado=?, cidade=?, cpf=?, email=?, telefone=?, sexo=?, funcao=?, atualizar='1', data_ani=? WHERE id_registro=?");
+            $stmt->bind_param("ssssssssssi", $nome, $apelido, $estado, $cidade, $cpf, $email, $telefone, $genero, $funcao, $data, $id);
         }
 
         $stmt->execute();
         $stmt->close();
         audit_log($conn, 'editar', 'registro', $id, "Admin editou usuario $id");
 
+        $_SESSION['sucesso_edicao'] = true;
+        $_SESSION['msg_edicao'] = "Usuário editado com sucesso!";
         unset($_SESSION['id_adm']);
     }
 
