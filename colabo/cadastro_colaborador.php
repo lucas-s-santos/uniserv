@@ -190,7 +190,7 @@
                             <div class="campo-texto full">
                                 <label>Localizacao (opcional)</label>
                                 <div class="button-group">
-                                    <input type="button" value="Usar minha localizacao" onclick="preencherLocalizacao('colaLat', 'colaLng', 'colaLocalStatus')">
+                                    <input type="button" value="Usar minha localizacao" onclick="preencherLocalizacao(\'colaLat\', \'colaLng\', \'colaLocalStatus\')">
                                 </div>
                                 <div class="texto" id="colaLocalStatus"></div>
                             </div>

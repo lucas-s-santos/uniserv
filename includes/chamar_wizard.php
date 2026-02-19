@@ -35,7 +35,7 @@
 
     $profissionais = [];
     $queryProfissionais = "SELECT A.id_trafun, A.funcoes_id_funcoes, A.valor_hora, A.disponivel, A.registro_id_registro,
-        B.apelido, B.cidade, B.estado, B.latitude, B.longitude, B.pix_chave, B.aceita_pix, B.aceita_dinheiro, B.aceita_cartao_presencial
+        B.apelido, B.cidade, B.estado, B.latitude, B.longitude, B.foto, B.pix_chave, B.aceita_pix, B.aceita_dinheiro, B.aceita_cartao_presencial
         FROM trabalhador_funcoes A
         INNER JOIN registro B ON B.id_registro = A.registro_id_registro
         WHERE B.funcao = '2'";
@@ -51,6 +51,7 @@
             'apelido' => $linha['apelido'],
             'cidade' => $linha['cidade'],
             'estado' => $linha['estado'],
+            'foto' => !empty($linha['foto']) ? $linha['foto'] : 'image/logoservicore.jpg',
             'lat' => $linha['latitude'] !== null ? (float)$linha['latitude'] : null,
             'lng' => $linha['longitude'] !== null ? (float)$linha['longitude'] : null,
             'hasPix' => !empty($linha['pix_chave']) && (int)$linha['aceita_pix'] === 1,
@@ -582,8 +583,13 @@
 
                 var avatar = document.createElement("div");
                 avatar.className = "pro-card__avatar";
-                var initials = item.apelido.substring(0, 2).toUpperCase();
-                avatar.textContent = initials;
+                var avatarImg = document.createElement("img");
+                avatarImg.src = item.foto || "image/logoservicore.jpg";
+                avatarImg.alt = "Foto de perfil";
+                avatarImg.onerror = function () {
+                    this.src = "image/logoservicore.jpg";
+                };
+                avatar.appendChild(avatarImg);
 
                 var info = document.createElement("div");
                 info.className = "pro-card__info";

@@ -16,12 +16,14 @@
     </div>
 
     <?php
-        $comando_testar2 = "SELECT A.nome 'nome_trabalhador', B.nome_func 'funcao', C.endereco 'endereco',
+        $comando_testar2 = "SELECT A.nome 'nome_trabalhador', A.foto 'foto_trabalhador',
+            D.nome 'nome_cliente', D.foto 'foto_cliente', B.nome_func 'funcao', C.endereco 'endereco',
             C.valor_atual 'valor', C.tempo_servico 'tempo_servico', C.valor_final 'valor_final', C.ativo 'ativo', C.status_etapa 'status_etapa',
             C.registro_id_registro 'id_cliente', C.id_trabalhador 'id_trabalhador', C.id_servico, C.pagamento_status, C.pagamento_comprovante,
-            A.pix_tipo 'pix_tipo', A.pix_chave 'pix_chave', A.aceita_pix, A.aceita_dinheiro, A.aceita_cartao_presencial, 
-            A.foto 'foto_pessoa', C.data_2 'data_servico'
+            A.pix_tipo 'pix_tipo', A.pix_chave 'pix_chave', A.aceita_pix, A.aceita_dinheiro, A.aceita_cartao_presencial,
+            C.data_2 'data_servico'
             FROM servico C INNER JOIN registro A ON A.id_registro = C.id_trabalhador
+            INNER JOIN registro D ON D.id_registro = C.registro_id_registro
             INNER JOIN funcoes B ON B.id_funcoes = C.funcoes_id_funcoes WHERE ativo>0";
         $joga_no_banco = mysqli_query($conn, $comando_testar2);
         
@@ -84,7 +86,11 @@
             <div class="services-grid">
             <?php foreach ($servicos_ativos as $servico): 
                 $is_trabalhador = $servico['id_trabalhador'] == $_SESSION['id_acesso'];
-                $foto = !empty($servico['foto_pessoa']) ? $servico['foto_pessoa'] : 'image/logoservicore.jpg';
+                $foto = $is_trabalhador
+                    ? (!empty($servico['foto_cliente']) ? $servico['foto_cliente'] : 'image/logoservicore.jpg')
+                    : (!empty($servico['foto_trabalhador']) ? $servico['foto_trabalhador'] : 'image/logoservicore.jpg');
+                $nome_pessoa = $is_trabalhador ? $servico['nome_cliente'] : $servico['nome_trabalhador'];
+                $papel = $is_trabalhador ? 'Cliente' : 'Colaborador';
                 $etapa_atual = $servico['status_etapa'] !== null ? (int)$servico['status_etapa'] : servico_etapa_from_status($servico['ativo']);
                 $steps = servico_etapa_steps();
                 $progress = 0;
@@ -98,8 +104,8 @@
                         <div class="service-card__person">
                             <img class="service-card__avatar" src="<?php echo htmlspecialchars($foto, ENT_QUOTES, 'UTF-8'); ?>" alt="Foto">
                             <div>
-                                <div class="service-card__name"><?php echo htmlspecialchars($servico['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></div>
-                                <div class="service-card__role"><?php echo $is_trabalhador ? 'Voce e o colaborador' : 'Colaborador'; ?></div>
+                                <div class="service-card__name"><?php echo htmlspecialchars($nome_pessoa, ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="service-card__role"><?php echo $papel; ?></div>
                             </div>
                         </div>
                         <span class="status-badge status-badge--active">Em andamento</span>
@@ -162,7 +168,11 @@
             <div class="services-grid">
             <?php foreach ($servicos_aguardando as $servico): 
                 $is_trabalhador = $servico['id_trabalhador'] == $_SESSION['id_acesso'];
-                $foto = !empty($servico['foto_pessoa']) ? $servico['foto_pessoa'] : 'image/logoservicore.jpg';
+                $foto = $is_trabalhador
+                    ? (!empty($servico['foto_cliente']) ? $servico['foto_cliente'] : 'image/logoservicore.jpg')
+                    : (!empty($servico['foto_trabalhador']) ? $servico['foto_trabalhador'] : 'image/logoservicore.jpg');
+                $nome_pessoa = $is_trabalhador ? $servico['nome_cliente'] : $servico['nome_trabalhador'];
+                $papel = $is_trabalhador ? 'Cliente' : 'Colaborador';
                 $pagamento_status = isset($servico['pagamento_status']) ? (int)$servico['pagamento_status'] : 0;
                 $valor_final = $servico['valor_final'] !== null ? (float)$servico['valor_final'] : 0.0;
                 if ($valor_final <= 0 && $servico['tempo_servico']) {
@@ -175,8 +185,8 @@
                         <div class="service-card__person">
                             <img class="service-card__avatar" src="<?php echo htmlspecialchars($foto, ENT_QUOTES, 'UTF-8'); ?>" alt="Foto">
                             <div>
-                                <div class="service-card__name"><?php echo htmlspecialchars($servico['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></div>
-                                <div class="service-card__role"><?php echo $is_trabalhador ? 'Voce e o colaborador' : 'Colaborador'; ?></div>
+                                <div class="service-card__name"><?php echo htmlspecialchars($nome_pessoa, ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="service-card__role"><?php echo $papel; ?></div>
                             </div>
                         </div>
                         <span class="status-badge status-badge--warning">Aguardando pagamento</span>
@@ -280,7 +290,11 @@
             <div class="services-grid">
             <?php foreach ($servicos_pendentes as $servico): 
                 $is_trabalhador = $servico['id_trabalhador'] == $_SESSION['id_acesso'];
-                $foto = !empty($servico['foto_pessoa']) ? $servico['foto_pessoa'] : 'image/logoservicore.jpg';
+                $foto = $is_trabalhador
+                    ? (!empty($servico['foto_cliente']) ? $servico['foto_cliente'] : 'image/logoservicore.jpg')
+                    : (!empty($servico['foto_trabalhador']) ? $servico['foto_trabalhador'] : 'image/logoservicore.jpg');
+                $nome_pessoa = $is_trabalhador ? $servico['nome_cliente'] : $servico['nome_trabalhador'];
+                $papel = $is_trabalhador ? 'Cliente' : 'Colaborador';
                 $data_fmt = $servico['data_servico'] ? date('d/m/Y', strtotime($servico['data_servico'])) : '-';
             ?>
                 <div class="service-card service-card--pending">
@@ -288,8 +302,8 @@
                         <div class="service-card__person">
                             <img class="service-card__avatar" src="<?php echo htmlspecialchars($foto, ENT_QUOTES, 'UTF-8'); ?>" alt="Foto">
                             <div>
-                                <div class="service-card__name"><?php echo htmlspecialchars($servico['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></div>
-                                <div class="service-card__role"><?php echo $is_trabalhador ? 'Voce e o colaborador' : 'Colaborador'; ?></div>
+                                <div class="service-card__name"><?php echo htmlspecialchars($nome_pessoa, ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="service-card__role"><?php echo $papel; ?></div>
                             </div>
                         </div>
                         <span class="status-badge status-badge--pending">Pendente</span>
