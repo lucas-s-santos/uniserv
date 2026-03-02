@@ -15,6 +15,154 @@
         exit;
     }
     include_once ("all.php");
+
+    $audit_page = isset($_GET['audit_page']) ? max(1, (int)$_GET['audit_page']) : 1;
+    $audit_limit = 5;
+    $audit_offset = ($audit_page - 1) * $audit_limit;
+    $audit_has_next = false;
+
+    $audit_items = [];
+    $stmt = $conn->prepare("SELECT a.acao, a.entidade, a.entidade_id, a.detalhes, a.data_acao, r.nome, r.apelido
+        FROM audit_log a
+        LEFT JOIN registro r ON r.id_registro = a.registro_id_registro
+        ORDER BY a.data_acao DESC
+        LIMIT ? OFFSET ?");
+    $audit_fetch = $audit_limit + 1;
+    $stmt->bind_param("ii", $audit_fetch, $audit_offset);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $audit_items[] = $row;
+    }
+    $stmt->close();
+
+    if (count($audit_items) > $audit_limit) {
+        $audit_has_next = true;
+        $audit_items = array_slice($audit_items, 0, $audit_limit);
+    }
+
+    $audit_total = 0;
+    $total_stmt = $conn->prepare("SELECT COUNT(*) as total FROM audit_log");
+    $total_stmt->execute();
+    $total_res = $total_stmt->get_result()->fetch_assoc();
+    $total_stmt->close();
+    $audit_total = $total_res ? (int)$total_res['total'] : 0;
+    $audit_pages = $audit_total > 0 ? (int)ceil($audit_total / $audit_limit) : 1;
+
+    $servico_cliente = isset($_GET['servico_cliente']) ? trim((string)$_GET['servico_cliente']) : '';
+    $servico_funcao = isset($_GET['servico_funcao']) ? trim((string)$_GET['servico_funcao']) : '';
+    $servico_status = isset($_GET['servico_status']) ? trim((string)$_GET['servico_status']) : '';
+    $servico_page = isset($_GET['servico_page']) ? max(1, (int)$_GET['servico_page']) : 1;
+    $servico_limit = 10;
+    $servico_offset = ($servico_page - 1) * $servico_limit;
+    $servico_status_num = null;
+    if ($servico_status === 'pendente') {
+        $servico_status_num = SERVICO_STATUS_PENDENTE;
+    } elseif ($servico_status === 'andamento') {
+        $servico_status_num = SERVICO_STATUS_ATIVO;
+    } elseif ($servico_status === 'aguardando_pagamento') {
+        $servico_status_num = SERVICO_STATUS_AGUARDANDO_PAGAMENTO;
+    } elseif ($servico_status === 'finalizado') {
+        $servico_status_num = SERVICO_STATUS_FINALIZADO;
+    }
+
+    $servico_cliente_like = '%' . $servico_cliente . '%';
+    $servico_funcao_like = '%' . $servico_funcao . '%';
+
+    $servico_total = 0;
+    if ($servico_status_num === null) {
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total
+            FROM servico s
+            INNER JOIN registro c ON c.id_registro = s.registro_id_registro
+            INNER JOIN funcoes f ON f.id_funcoes = s.funcoes_id_funcoes
+            WHERE c.nome LIKE ? AND f.nome_func LIKE ?");
+        $stmt->bind_param("ss", $servico_cliente_like, $servico_funcao_like);
+    } else {
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total
+            FROM servico s
+            INNER JOIN registro c ON c.id_registro = s.registro_id_registro
+            INNER JOIN funcoes f ON f.id_funcoes = s.funcoes_id_funcoes
+            WHERE c.nome LIKE ? AND f.nome_func LIKE ? AND s.ativo = ?");
+        $stmt->bind_param("ssi", $servico_cliente_like, $servico_funcao_like, $servico_status_num);
+    }
+    $stmt->execute();
+    $servico_count_row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $servico_total = $servico_count_row ? (int)$servico_count_row['total'] : 0;
+    $servico_pages = $servico_total > 0 ? (int)ceil($servico_total / $servico_limit) : 1;
+    if ($servico_page > $servico_pages) {
+        $servico_page = $servico_pages;
+        $servico_offset = ($servico_page - 1) * $servico_limit;
+    }
+
+    $admin_servicos_recentes = [];
+    if ($servico_status_num === null) {
+        $stmt = $conn->prepare("SELECT s.id_servico, s.ativo, s.pagamento_status, s.valor_final, s.tempo_servico, s.valor_atual, s.data_2,
+                c.nome AS nome_cliente, t.nome AS nome_trabalhador, f.nome_func
+            FROM servico s
+            INNER JOIN registro c ON c.id_registro = s.registro_id_registro
+            INNER JOIN registro t ON t.id_registro = s.id_trabalhador
+            INNER JOIN funcoes f ON f.id_funcoes = s.funcoes_id_funcoes
+            WHERE c.nome LIKE ? AND f.nome_func LIKE ?
+            ORDER BY s.id_servico DESC
+            LIMIT ? OFFSET ?");
+        $stmt->bind_param("ssii", $servico_cliente_like, $servico_funcao_like, $servico_limit, $servico_offset);
+    } else {
+        $stmt = $conn->prepare("SELECT s.id_servico, s.ativo, s.pagamento_status, s.valor_final, s.tempo_servico, s.valor_atual, s.data_2,
+                c.nome AS nome_cliente, t.nome AS nome_trabalhador, f.nome_func
+            FROM servico s
+            INNER JOIN registro c ON c.id_registro = s.registro_id_registro
+            INNER JOIN registro t ON t.id_registro = s.id_trabalhador
+            INNER JOIN funcoes f ON f.id_funcoes = s.funcoes_id_funcoes
+            WHERE c.nome LIKE ? AND f.nome_func LIKE ? AND s.ativo = ?
+            ORDER BY s.id_servico DESC
+            LIMIT ? OFFSET ?");
+        $stmt->bind_param("ssiii", $servico_cliente_like, $servico_funcao_like, $servico_status_num, $servico_limit, $servico_offset);
+    }
+    $stmt->execute();
+    $res_servicos = $stmt->get_result();
+    while ($row = $res_servicos->fetch_assoc()) {
+        $admin_servicos_recentes[] = $row;
+    }
+    $stmt->close();
+
+    function audit_tag_class($acao) {
+        $acao = strtolower(trim($acao));
+        if (in_array($acao, ['criar', 'login', 'aceitar'], true)) {
+            return 'audit-tag--create';
+        }
+        if (in_array($acao, ['editar', 'finalizar'], true)) {
+            return 'audit-tag--update';
+        }
+        if (in_array($acao, ['excluir', 'recusar'], true)) {
+            return 'audit-tag--delete';
+        }
+        return '';
+    }
+
+    function audit_relative_time($datetime) {
+        if (!$datetime) {
+            return '';
+        }
+        $timestamp = strtotime($datetime);
+        if (!$timestamp) {
+            return '';
+        }
+        $diff = time() - $timestamp;
+        if ($diff < 60) {
+            return 'agora';
+        }
+        if ($diff < 3600) {
+            $mins = (int)floor($diff / 60);
+            return "ha {$mins} min";
+        }
+        if ($diff < 86400) {
+            $hours = (int)floor($diff / 3600);
+            return "ha {$hours} h";
+        }
+        $days = (int)floor($diff / 86400);
+        return "ha {$days} d";
+    }
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -54,6 +202,12 @@
                     let formCHECK = document.getElementById(ID);
                     let campoID = formCHECK.id_adm.value;
                     return confirm('Tem certeza que deseja apagar a pessoa de ID "'+campoID+'"?');
+                }
+
+                function confirmacaoServicoID(ID) {
+                    let formCHECK = document.getElementById(ID);
+                    let campoID = formCHECK.id_adm.value;
+                    return confirm('Tem certeza que deseja apagar o servico de ID "' + campoID + '"? Essa acao nao pode ser desfeita.');
                 }
 
                 function testarOEditar() {
@@ -334,78 +488,135 @@
             </div>
         </section>
 
-        <?php
-            $audit_page = isset($_GET['audit_page']) ? max(1, (int)$_GET['audit_page']) : 1;
-            $audit_limit = 5;
-            $audit_offset = ($audit_page - 1) * $audit_limit;
-            $audit_has_next = false;
+        <!-- SERVICES TABLE SECTION -->
+        <section class="admin-section">
+            <div class="admin-section-header">
+                <div>
+                    <div class="admin-section-title">Servicos Prestados</div>
+                    <div class="admin-section-desc">Acompanhe os ultimos servicos e exclua registros incorretos.</div>
+                </div>
+            </div>
+            <form method="GET" action="administrador.php" class="admin-search-form" style="margin-bottom: 16px;">
+                <?php if (isset($_GET['audit_page'])) { ?>
+                    <input type="hidden" name="audit_page" value="<?php echo (int)$_GET['audit_page']; ?>">
+                <?php } ?>
+                <?php if (isset($_GET['funcao_q'])) { ?>
+                    <input type="hidden" name="funcao_q" value="<?php echo htmlspecialchars((string)$_GET['funcao_q'], ENT_QUOTES, 'UTF-8'); ?>">
+                <?php } ?>
+                <?php if (isset($_GET['funcao_categoria'])) { ?>
+                    <input type="hidden" name="funcao_categoria" value="<?php echo htmlspecialchars((string)$_GET['funcao_categoria'], ENT_QUOTES, 'UTF-8'); ?>">
+                <?php } ?>
+                <?php if (isset($_GET['funcao_page'])) { ?>
+                    <input type="hidden" name="funcao_page" value="<?php echo (int)$_GET['funcao_page']; ?>">
+                <?php } ?>
+                <div class="admin-search-inputs">
+                    <div class="campo-texto">
+                        <label for="servico_cliente">Cliente</label>
+                        <input type="text" id="servico_cliente" name="servico_cliente" value="<?php echo htmlspecialchars($servico_cliente, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nome do cliente">
+                    </div>
+                    <div class="campo-texto">
+                        <label for="servico_funcao">Funcao</label>
+                        <input type="text" id="servico_funcao" name="servico_funcao" value="<?php echo htmlspecialchars($servico_funcao, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex: Lava Rapido">
+                    </div>
+                    <div class="campo-texto">
+                        <label for="servico_status">Status</label>
+                        <select id="servico_status" name="servico_status">
+                            <option value="" <?php echo $servico_status === '' ? 'selected' : ''; ?>>Todos</option>
+                            <option value="pendente" <?php echo $servico_status === 'pendente' ? 'selected' : ''; ?>>Pendente</option>
+                            <option value="andamento" <?php echo $servico_status === 'andamento' ? 'selected' : ''; ?>>Em andamento</option>
+                            <option value="aguardando_pagamento" <?php echo $servico_status === 'aguardando_pagamento' ? 'selected' : ''; ?>>Aguardando pagamento</option>
+                            <option value="finalizado" <?php echo $servico_status === 'finalizado' ? 'selected' : ''; ?>>Finalizado</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar servicos prestados</button>
+            </form>
+            <div class="admin-table-wrapper" id="tabela_servicos">
+                <table class="admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Colaborador</th>
+                            <th>Funcao</th>
+                            <th>Status</th>
+                            <th>Pagamento</th>
+                            <th>Valor</th>
+                            <th>Data</th>
+                            <th>Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($admin_servicos_recentes)) { ?>
+                            <tr>
+                                <td colspan="9" style="text-align: center;">Nenhum servico encontrado.</td>
+                            </tr>
+                        <?php } else { ?>
+                            <?php foreach ($admin_servicos_recentes as $servico_item) {
+                                $status_num = (int)$servico_item['ativo'];
+                                $status_label = servico_status_label($status_num);
+                                $status_class = 'status-badge ' . servico_status_badge_class($status_num);
 
-            $audit_items = [];
-            $stmt = $conn->prepare("SELECT a.acao, a.entidade, a.entidade_id, a.detalhes, a.data_acao, r.nome, r.apelido
-                FROM audit_log a
-                LEFT JOIN registro r ON r.id_registro = a.registro_id_registro
-                ORDER BY a.data_acao DESC
-                LIMIT ? OFFSET ?");
-            $audit_fetch = $audit_limit + 1;
-            $stmt->bind_param("ii", $audit_fetch, $audit_offset);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            while ($row = $result->fetch_assoc()) {
-                $audit_items[] = $row;
-            }
-            $stmt->close();
+                                $pagamento_label = '-';
+                                $pagamento_status = isset($servico_item['pagamento_status']) ? (int)$servico_item['pagamento_status'] : 0;
+                                if ($pagamento_status === 2) {
+                                    $pagamento_label = 'Confirmado';
+                                } elseif ($pagamento_status === 1) {
+                                    $pagamento_label = 'Comprovante enviado';
+                                } elseif ($status_num === SERVICO_STATUS_AGUARDANDO_PAGAMENTO) {
+                                    $pagamento_label = 'Pendente';
+                                }
 
-            if (count($audit_items) > $audit_limit) {
-                $audit_has_next = true;
-                $audit_items = array_slice($audit_items, 0, $audit_limit);
-            }
+                                $valor_final = $servico_item['valor_final'] !== null ? (float)$servico_item['valor_final'] : 0.0;
+                                if ($valor_final <= 0 && !empty($servico_item['tempo_servico'])) {
+                                    $valor_final = ((float)$servico_item['valor_atual'] * ((float)$servico_item['tempo_servico'] / 60));
+                                }
+                                $valor_fmt = number_format($valor_final, 2, ',', '.');
+                                $data_fmt = !empty($servico_item['data_2']) ? date('d/m/Y', strtotime($servico_item['data_2'])) : '-';
+                            ?>
+                                <tr>
+                                    <td data-label="ID"><span class="admin-user-id"><?php echo (int)$servico_item['id_servico']; ?></span></td>
+                                    <td data-label="Cliente"><?php echo htmlspecialchars($servico_item['nome_cliente'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td data-label="Colaborador"><?php echo htmlspecialchars($servico_item['nome_trabalhador'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td data-label="Funcao"><?php echo htmlspecialchars($servico_item['nome_func'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td data-label="Status"><span class="<?php echo $status_class; ?>"><?php echo $status_label; ?></span></td>
+                                    <td data-label="Pagamento"><?php echo htmlspecialchars($pagamento_label, ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td data-label="Valor">R$ <?php echo $valor_fmt; ?></td>
+                                    <td data-label="Data"><?php echo $data_fmt; ?></td>
+                                    <td data-label="Acoes">
+                                        <div class="admin-row-actions">
+                                            <button type="button" class="btn btn-small btn-ghost admin-delete-service" data-id="<?php echo (int)$servico_item['id_servico']; ?>" title="Excluir servico">Excluir</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php } ?>
+                        <?php } ?>
+                    </tbody>
+                </table>
+                <div class="admin-table-footer">
+                    <span class="admin-result-count">Total filtrado: <strong><?php echo $servico_total; ?></strong> servico(s)</span>
+                    <?php if ($servico_pages > 1) { ?>
+                        <div class="admin-pagination">
+                            <?php if ($servico_page > 1) {
+                                $params_prev = $_GET;
+                                $params_prev['servico_page'] = $servico_page - 1;
+                            ?>
+                                <a class="btn btn-ghost btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_prev), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                            <?php } ?>
+                            <span class="admin-page-info">Pagina <?php echo $servico_page; ?> de <?php echo $servico_pages; ?></span>
+                            <?php if ($servico_page < $servico_pages) {
+                                $params_next = $_GET;
+                                $params_next['servico_page'] = $servico_page + 1;
+                            ?>
+                                <a class="btn btn-primary btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_next), ENT_QUOTES, 'UTF-8'); ?>">Proxima</a>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+        </section>
 
-            $audit_total = 0;
-            $total_stmt = $conn->prepare("SELECT COUNT(*) as total FROM audit_log");
-            $total_stmt->execute();
-            $total_res = $total_stmt->get_result()->fetch_assoc();
-            $total_stmt->close();
-            $audit_total = $total_res ? (int)$total_res['total'] : 0;
-            $audit_pages = $audit_total > 0 ? (int)ceil($audit_total / $audit_limit) : 1;
-
-            function audit_tag_class($acao) {
-                $acao = strtolower(trim($acao));
-                if (in_array($acao, ['criar', 'login', 'aceitar'], true)) {
-                    return 'audit-tag--create';
-                }
-                if (in_array($acao, ['editar', 'finalizar'], true)) {
-                    return 'audit-tag--update';
-                }
-                if (in_array($acao, ['excluir', 'recusar'], true)) {
-                    return 'audit-tag--delete';
-                }
-                return '';
-            }
-
-            function audit_relative_time($datetime) {
-                if (!$datetime) {
-                    return '';
-                }
-                $timestamp = strtotime($datetime);
-                if (!$timestamp) {
-                    return '';
-                }
-                $diff = time() - $timestamp;
-                if ($diff < 60) {
-                    return 'agora';
-                }
-                if ($diff < 3600) {
-                    $mins = (int)floor($diff / 60);
-                    return "ha {$mins} min";
-                }
-                if ($diff < 86400) {
-                    $hours = (int)floor($diff / 3600);
-                    return "ha {$hours} h";
-                }
-                $days = (int)floor($diff / 86400);
-                return "ha {$days} d";
-            }
-        ?>
+        <?php include_once "includes/admin_funcoes.php"; ?>
 
         <!-- EDIT FORMS SECTION (HIDDEN) -->
         <form action="adm/processa_editar.php" method="POST" class="hidden form-card" id="hidden2">
@@ -425,7 +636,25 @@
                 <label for="id_p2">ID do Usuário</label>
                 <input type="text" name="id_adm" id="id_p2" placeholder="Digite o ID para excluir">
             </div>
+            <div class="campo-texto">
+                <label for="motivo_excluir_usuario">Motivo (opcional)</label>
+                <input type="text" name="motivo_acao" id="motivo_excluir_usuario" maxlength="180" placeholder="Ex: cadastro duplicado">
+            </div>
             <button type="submit" class="btn btn-ghost" onclick="return confirmacaoID('hidden4')">Excluir</button>
+        </form>
+
+        <form action="adm/processa_deletar.php" method="POST" class="hidden form-card" id="hidden6">
+            <div class="title">Excluir Servico</div>
+            <input type="hidden" name="tipo" value="servico">
+            <div class="campo-texto">
+                <label for="id_p3">ID do Servico</label>
+                <input type="text" name="id_adm" id="id_p3" placeholder="Digite o ID do servico">
+            </div>
+            <div class="campo-texto">
+                <label for="motivo_excluir_servico">Motivo (opcional)</label>
+                <input type="text" name="motivo_acao" id="motivo_excluir_servico" maxlength="180" placeholder="Ex: servico invalido">
+            </div>
+            <button type="submit" class="btn btn-ghost" onclick="return confirmacaoServicoID('hidden6')">Excluir servico</button>
         </form>
 
         <form action="adm/processa_criar.php" method="POST" class="hidden form-card" id="hidden5" enctype="multipart/form-data">
@@ -450,6 +679,10 @@
                 <div class="campo-texto full">
                     <label for="descricao">Descrição</label>
                     <input type="text" id="descricao" name="descricao" placeholder="Detalhes do serviço" required>
+                </div>
+                <div class="campo-texto full">
+                    <label for="motivo_criar_funcao">Motivo da criacao (opcional)</label>
+                    <input type="text" id="motivo_criar_funcao" name="motivo_acao" maxlength="180" placeholder="Ex: novo servico solicitado pelos clientes">
                 </div>
                 <div class="campo-texto full">
                     <label for="avatar">Imagem do Serviço</label>
@@ -589,6 +822,27 @@
                         modal.classList.remove('is-open');
                     }
                 });
+            });
+        </script>
+        <script>
+            document.addEventListener('click', function(event) {
+                const btn = event.target.closest('.admin-delete-service');
+                if (!btn) {
+                    return;
+                }
+                const form = document.getElementById('hidden6');
+                if (!form) {
+                    return;
+                }
+                form.id_adm.value = btn.getAttribute('data-id');
+                form.classList.add('is-open');
+            });
+
+            document.addEventListener('click', function(event) {
+                const modal = document.getElementById('hidden6');
+                if (modal && event.target === modal) {
+                    modal.classList.remove('is-open');
+                }
             });
         </script>
     </body>
