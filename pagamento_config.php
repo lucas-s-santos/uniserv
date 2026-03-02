@@ -60,6 +60,26 @@
             $pagamento_preferido = '';
         }
 
+        $metodos_ativos = [];
+        if ($aceita_pix === 1) {
+            $metodos_ativos[] = 'pix';
+        }
+        if ($aceita_dinheiro === 1) {
+            $metodos_ativos[] = 'dinheiro';
+        }
+        if ($aceita_cartao_presencial === 1) {
+            $metodos_ativos[] = 'cartao';
+        }
+        if (empty($metodos_ativos)) {
+            $errors[] = 'Selecione ao menos um metodo de pagamento.';
+        }
+
+        if (count($metodos_ativos) === 1) {
+            $pagamento_preferido = $metodos_ativos[0];
+        } elseif ($pagamento_preferido !== '' && $pagamento_preferido !== 'qualquer' && !in_array($pagamento_preferido, $metodos_ativos, true)) {
+            $errors[] = 'A preferencia precisa estar entre os metodos habilitados.';
+        }
+
         if (empty($errors)) {
             $stmt = $conn->prepare("UPDATE registro SET pix_tipo=?, pix_chave=?, aceita_pix=?, aceita_dinheiro=?, aceita_cartao_presencial=?, pagamento_preferido=?, mensagem_pagamento=? WHERE id_registro=?");
             $stmt->bind_param("ssiiissi", $pix_tipo, $pix_chave, $aceita_pix, $aceita_dinheiro, $aceita_cartao_presencial, $pagamento_preferido, $mensagem_pagamento, $_SESSION['id_acesso']);
@@ -127,30 +147,31 @@
                     </div>
                     <div class="payment-config__options">
                         <label class="payment-toggle">
-                            <input type="checkbox" name="aceita_pix" <?php echo $aceita_pix ? 'checked' : ''; ?>>
+                            <input type="checkbox" id="aceita_pix" name="aceita_pix" <?php echo $aceita_pix ? 'checked' : ''; ?>>
                             <span class="payment-toggle__label">PIX</span>
                             <span class="payment-toggle__hint">Instantaneo e pratico</span>
                         </label>
                         <label class="payment-toggle">
-                            <input type="checkbox" name="aceita_dinheiro" <?php echo $aceita_dinheiro ? 'checked' : ''; ?>>
+                            <input type="checkbox" id="aceita_dinheiro" name="aceita_dinheiro" <?php echo $aceita_dinheiro ? 'checked' : ''; ?>>
                             <span class="payment-toggle__label">Dinheiro</span>
                             <span class="payment-toggle__hint">Pagamento presencial</span>
                         </label>
                         <label class="payment-toggle">
-                            <input type="checkbox" name="aceita_cartao_presencial" <?php echo $aceita_cartao_presencial ? 'checked' : ''; ?>>
+                            <input type="checkbox" id="aceita_cartao_presencial" name="aceita_cartao_presencial" <?php echo $aceita_cartao_presencial ? 'checked' : ''; ?>>
                             <span class="payment-toggle__label">Cartao presencial</span>
                             <span class="payment-toggle__hint">Debito ou credito</span>
                         </label>
                     </div>
                     <div class="payment-config__field">
-                        <label>Preferencia</label>
-                        <select name="pagamento_preferido">
+                        <label for="pagamento_preferido">Preferencia</label>
+                        <select id="pagamento_preferido" name="pagamento_preferido">
                             <option value="" <?php echo $pagamento_preferido === '' ? 'selected' : ''; ?>>Nao definir</option>
-                            <option value="pix" <?php echo $pagamento_preferido === 'pix' ? 'selected' : ''; ?>>PIX</option>
-                            <option value="dinheiro" <?php echo $pagamento_preferido === 'dinheiro' ? 'selected' : ''; ?>>Dinheiro</option>
-                            <option value="cartao" <?php echo $pagamento_preferido === 'cartao' ? 'selected' : ''; ?>>Cartao presencial</option>
+                            <option value="pix" data-metodo="pix" <?php echo $pagamento_preferido === 'pix' ? 'selected' : ''; ?>>PIX</option>
+                            <option value="dinheiro" data-metodo="dinheiro" <?php echo $pagamento_preferido === 'dinheiro' ? 'selected' : ''; ?>>Dinheiro</option>
+                            <option value="cartao" data-metodo="cartao" <?php echo $pagamento_preferido === 'cartao' ? 'selected' : ''; ?>>Cartao presencial</option>
                             <option value="qualquer" <?php echo $pagamento_preferido === 'qualquer' ? 'selected' : ''; ?>>Qualquer</option>
                         </select>
+                        <div id="preferencia_notice" class="texto" style="font-size: 13px; margin-top: 8px; opacity: 0.85;"></div>
                     </div>
                 </div>
 
@@ -200,9 +221,92 @@
                         <h2>Pronto para receber</h2>
                         <p>Revise as informacoes e confirme as configuracoes.</p>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-large">Salvar configuracoes</button>
+                    <button type="submit" id="salvar_pagamento_btn" class="btn btn-primary btn-large">Salvar configuracoes</button>
                 </div>
             </form>
         </main>
+
+        <script>
+            (function () {
+                var campos = {
+                    pix: document.getElementById('aceita_pix'),
+                    dinheiro: document.getElementById('aceita_dinheiro'),
+                    cartao: document.getElementById('aceita_cartao_presencial')
+                };
+                var labels = {
+                    pix: 'PIX',
+                    dinheiro: 'Dinheiro',
+                    cartao: 'Cartao presencial'
+                };
+                var selectPreferencia = document.getElementById('pagamento_preferido');
+                var salvarBtn = document.getElementById('salvar_pagamento_btn');
+                var notice = document.getElementById('preferencia_notice');
+                if (!selectPreferencia || !salvarBtn || !notice) {
+                    return;
+                }
+
+                function ativos() {
+                    var keys = Object.keys(campos);
+                    var enabled = [];
+                    for (var i = 0; i < keys.length; i++) {
+                        var key = keys[i];
+                        if (campos[key] && campos[key].checked) {
+                            enabled.push(key);
+                        }
+                    }
+                    return enabled;
+                }
+
+                function syncPreferencia() {
+                    var enabled = ativos();
+                    var options = selectPreferencia.options;
+
+                    for (var i = 0; i < options.length; i++) {
+                        var option = options[i];
+                        var metodo = option.getAttribute('data-metodo');
+                        if (!metodo) {
+                            continue;
+                        }
+                        var permitir = enabled.indexOf(metodo) !== -1;
+                        option.disabled = !permitir;
+                        option.hidden = !permitir;
+                    }
+
+                    if (selectPreferencia.value !== '' && selectPreferencia.value !== 'qualquer') {
+                        var selectedOption = selectPreferencia.options[selectPreferencia.selectedIndex];
+                        if (selectedOption && selectedOption.disabled) {
+                            selectPreferencia.value = '';
+                        }
+                    }
+
+                    if (enabled.length === 0) {
+                        salvarBtn.disabled = true;
+                        notice.textContent = 'Selecione ao menos um metodo para salvar.';
+                        return;
+                    }
+
+                    salvarBtn.disabled = false;
+                    if (enabled.length === 1) {
+                        selectPreferencia.value = enabled[0];
+                        notice.textContent = 'Com 1 metodo ativo, a preferencia fica automatica: ' + labels[enabled[0]] + '.';
+                        return;
+                    }
+
+                    var nomes = [];
+                    for (var j = 0; j < enabled.length; j++) {
+                        nomes.push(labels[enabled[j]]);
+                    }
+                    notice.textContent = 'Metodos ativos: ' + nomes.join(' | ');
+                }
+
+                document.addEventListener('change', function (event) {
+                    if (event.target && (event.target.id === 'aceita_pix' || event.target.id === 'aceita_dinheiro' || event.target.id === 'aceita_cartao_presencial')) {
+                        syncPreferencia();
+                    }
+                });
+
+                syncPreferencia();
+            })();
+        </script>
     </body>
 </html>

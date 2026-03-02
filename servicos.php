@@ -3,6 +3,7 @@
     include_once "conexao.php";
     include_once "status.php";
     include_once "audit.php";
+    include_once "includes/pix_gateway.php";
     $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
     $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
     if (!isset($_SESSION['cpf'])) {
@@ -20,6 +21,7 @@
             WHERE s.id_servico='$id_servico' LIMIT 1";
         $resultado_status = mysqli_query($conn, $buscar_status);
         $status_atual = mysqli_fetch_assoc($resultado_status);
+        $pix_dynamic_schema = pix_has_dynamic_schema($conn);
 
         if (!$status_atual) {
             $_SESSION['avisar'] = "Servico nao encontrado.";
@@ -87,7 +89,11 @@
                 header('location: servicos.php');
                 exit;
             }
-            $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            if ($pix_dynamic_schema) {
+                $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW(), pix_status='manual_pending' WHERE id_servico=?");
+            } else {
+                $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            }
             $stmt->bind_param("si", $nome_comprovante, $id_servico);
             $stmt->execute();
             $stmt->close();
@@ -126,7 +132,11 @@
                 exit;
             }
             $comprovante = 'presencial';
-            $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            if ($pix_dynamic_schema) {
+                $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW(), pix_status='presencial_pending' WHERE id_servico=?");
+            } else {
+                $stmt = $conn->prepare("UPDATE servico SET pagamento_status=1, pagamento_comprovante=?, pagamento_data=NOW() WHERE id_servico=?");
+            }
             $stmt->bind_param("si", $comprovante, $id_servico);
             $stmt->execute();
             $stmt->close();
@@ -157,7 +167,11 @@
                 exit;
             }
             $status_finalizado = SERVICO_STATUS_FINALIZADO;
-            $stmt = $conn->prepare("UPDATE servico SET ativo=?, pagamento_status=2, pagamento_data=NOW() WHERE id_servico=?");
+            if ($pix_dynamic_schema) {
+                $stmt = $conn->prepare("UPDATE servico SET ativo=?, pagamento_status=2, pagamento_data=NOW(), pix_status='paid', pix_pago_em=COALESCE(pix_pago_em, NOW()) WHERE id_servico=?");
+            } else {
+                $stmt = $conn->prepare("UPDATE servico SET ativo=?, pagamento_status=2, pagamento_data=NOW() WHERE id_servico=?");
+            }
             $stmt->bind_param("ii", $status_finalizado, $id_servico);
             $stmt->execute();
             $stmt->close();
@@ -222,31 +236,51 @@
 
         $foto_antes = isset($_FILES['foto_antes']) ? $_FILES['foto_antes'] : null;
         $foto_depois = isset($_FILES['foto_depois']) ? $_FILES['foto_depois'] : null;
-        if (!$foto_antes || !$foto_depois || $foto_antes['error'] !== UPLOAD_ERR_OK || $foto_depois['error'] !== UPLOAD_ERR_OK) {
-            $_SESSION['avisar'] = "Envie as fotos de antes e depois para finalizar.";
+        if (!$foto_depois || $foto_depois['error'] !== UPLOAD_ERR_OK) {
+            $_SESSION['avisar'] = "Envie a foto de depois para finalizar.";
             $_SESSION['avisar_tipo'] = "warn";
             header('location: servicos.php');
             exit;
         }
 
         $permitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png'];
-        if (!isset($permitidos[$foto_antes['type']]) || !isset($permitidos[$foto_depois['type']])) {
+        if (!isset($permitidos[$foto_depois['type']])) {
             $_SESSION['avisar'] = "Formato de imagem invalido. Use JPG ou PNG.";
             $_SESSION['avisar_tipo'] = "error";
             header('location: servicos.php');
             exit;
         }
 
-        $upload_dir = __DIR__ . '/image/servicos';
-        $base_path = 'image/servicos';
-        $nome_antes = $base_path . '/antes_' . $id_servico . '_' . time() . '.' . $permitidos[$foto_antes['type']];
-        $nome_depois = $base_path . '/depois_' . $id_servico . '_' . time() . '.' . $permitidos[$foto_depois['type']];
-
-        if (!move_uploaded_file($foto_antes['tmp_name'], $upload_dir . '/' . basename($nome_antes))) {
-            $_SESSION['avisar'] = "Falha ao salvar a foto de antes.";
+        $tem_foto_antes = $foto_antes && isset($foto_antes['error']) && $foto_antes['error'] === UPLOAD_ERR_OK;
+        if ($foto_antes && isset($foto_antes['error']) && $foto_antes['error'] !== UPLOAD_ERR_OK && $foto_antes['error'] !== UPLOAD_ERR_NO_FILE) {
+            $_SESSION['avisar'] = "Falha no envio da foto de antes.";
             $_SESSION['avisar_tipo'] = "error";
             header('location: servicos.php');
             exit;
+        }
+        if ($tem_foto_antes && !isset($permitidos[$foto_antes['type']])) {
+            $_SESSION['avisar'] = "Formato da foto de antes invalido. Use JPG ou PNG.";
+            $_SESSION['avisar_tipo'] = "error";
+            header('location: servicos.php');
+            exit;
+        }
+
+        $upload_dir = __DIR__ . '/image/servicos';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0775, true);
+        }
+        $base_path = 'image/servicos';
+        $nome_antes = null;
+        $nome_depois = $base_path . '/depois_' . $id_servico . '_' . time() . '.' . $permitidos[$foto_depois['type']];
+
+        if ($tem_foto_antes) {
+            $nome_antes = $base_path . '/antes_' . $id_servico . '_' . time() . '.' . $permitidos[$foto_antes['type']];
+            if (!move_uploaded_file($foto_antes['tmp_name'], $upload_dir . '/' . basename($nome_antes))) {
+                $_SESSION['avisar'] = "Falha ao salvar a foto de antes.";
+                $_SESSION['avisar_tipo'] = "error";
+                header('location: servicos.php');
+                exit;
+            }
         }
         if (!move_uploaded_file($foto_depois['tmp_name'], $upload_dir . '/' . basename($nome_depois))) {
             $_SESSION['avisar'] = "Falha ao salvar a foto de depois.";
@@ -299,8 +333,14 @@
         }
         $valor_hora = (float)$status_atual['valor_atual'];
         $valor_final = round(($tempo / 60) * $valor_hora, 2);
-        $stmt = $conn->prepare("UPDATE servico SET ativo=?, status_etapa=?, tempo_servico=?, valor_final=?, endereco='Finalizado', foto_antes=?, foto_depois=?, pagamento_status=0 WHERE id_servico=?");
-        $stmt->bind_param("iiidssi", $status_finalizado, $etapa_finalizado, $tempo, $valor_final, $nome_antes, $nome_depois, $id_servico);
+        $update_sql = "UPDATE servico SET ativo=?, status_etapa=?, tempo_servico=?, valor_final=?, endereco='Finalizado', foto_antes=NULLIF(?, ''), foto_depois=?, pagamento_status=0, pagamento_comprovante=NULL, pagamento_data=NULL";
+        if ($pix_dynamic_schema) {
+            $update_sql .= ", pix_txid=NULL, pix_payload=NULL, pix_qr_url=NULL, pix_gateway=NULL, pix_expira_em=NULL, pix_status=NULL, pix_valor=NULL, pix_pago_em=NULL, pix_webhook_payload=NULL";
+        }
+        $update_sql .= " WHERE id_servico=?";
+        $stmt = $conn->prepare($update_sql);
+        $nome_antes_db = $nome_antes ? $nome_antes : '';
+        $stmt->bind_param("iiidssi", $status_finalizado, $etapa_finalizado, $tempo, $valor_final, $nome_antes_db, $nome_depois, $id_servico);
         $stmt->execute();
         $stmt->close();
         audit_log($conn, 'finalizar', 'servico', $id_servico, "Tempo: $tempo");
@@ -434,8 +474,8 @@
                         </div>
                         <div class='form-grid'>
                             <div class='campo-texto'>
-                                <label>Foto antes</label>
-                                <input type='file' name='foto_antes' accept='image/png, image/jpeg' required>
+                                <label>Foto antes (opcional)</label>
+                                <input type='file' name='foto_antes' accept='image/png, image/jpeg'>
                             </div>
                             <div class='campo-texto'>
                                 <label>Foto depois</label>

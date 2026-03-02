@@ -58,12 +58,23 @@ CREATE TABLE Servico (
   pagamento_status TINYINT NULL,
   pagamento_comprovante VARCHAR(255) NULL,
   pagamento_data DATETIME NULL,
+  pix_txid VARCHAR(35) NULL,
+  pix_payload TEXT NULL,
+  pix_qr_url VARCHAR(500) NULL,
+  pix_gateway VARCHAR(40) NULL,
+  pix_expira_em DATETIME NULL,
+  pix_status VARCHAR(20) NULL,
+  pix_valor DECIMAL(10,2) NULL,
+  pix_pago_em DATETIME NULL,
+  pix_webhook_payload LONGTEXT NULL,
   foto_antes VARCHAR(255) NULL,
   foto_depois VARCHAR(255) NULL,
   data_2 DATE NULL,
   PRIMARY KEY(id_servico),
   INDEX Servico_FKIndex3(registro_id_registro),
-  INDEX Servico_FKIndex4(funcoes_id_funcoes)
+  INDEX Servico_FKIndex4(funcoes_id_funcoes),
+  INDEX idx_servico_pix_txid(pix_txid),
+  INDEX idx_servico_pix_status(pix_status)
 );
 
 CREATE TABLE checklist_itens (
