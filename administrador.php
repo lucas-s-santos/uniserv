@@ -1,6 +1,7 @@
 <?php
     session_start();
     include_once("conexao.php");
+    include_once("status.php");
     $theme = isset($_SESSION['theme']) ? $_SESSION['theme'] : 'dark';
     $themeClass = $theme === 'light' ? 'theme-light' : 'theme-dark';
     if (isset($_SESSION['funcao'])) {
@@ -52,6 +53,7 @@
     $servico_cliente = isset($_GET['servico_cliente']) ? trim((string)$_GET['servico_cliente']) : '';
     $servico_funcao = isset($_GET['servico_funcao']) ? trim((string)$_GET['servico_funcao']) : '';
     $servico_status = isset($_GET['servico_status']) ? trim((string)$_GET['servico_status']) : '';
+    $servico_anchor = '#secao-servicos-prestados';
     $servico_page = isset($_GET['servico_page']) ? max(1, (int)$_GET['servico_page']) : 1;
     $servico_limit = 10;
     $servico_offset = ($servico_page - 1) * $servico_limit;
@@ -94,6 +96,14 @@
         $servico_page = $servico_pages;
         $servico_offset = ($servico_page - 1) * $servico_limit;
     }
+
+    $qs_servico_clear = $_GET;
+    unset($qs_servico_clear['servico_cliente'], $qs_servico_clear['servico_funcao'], $qs_servico_clear['servico_status'], $qs_servico_clear['servico_page']);
+    $servico_clear_href = 'administrador.php';
+    if (!empty($qs_servico_clear)) {
+        $servico_clear_href .= '?' . http_build_query($qs_servico_clear);
+    }
+    $servico_clear_href .= $servico_anchor;
 
     $admin_servicos_recentes = [];
     if ($servico_status_num === null) {
@@ -489,14 +499,14 @@
         </section>
 
         <!-- SERVICES TABLE SECTION -->
-        <section class="admin-section">
+        <section class="admin-section" id="secao-servicos-prestados">
             <div class="admin-section-header">
                 <div>
                     <div class="admin-section-title">Servicos Prestados</div>
                     <div class="admin-section-desc">Acompanhe os ultimos servicos e exclua registros incorretos.</div>
                 </div>
             </div>
-            <form method="GET" action="administrador.php" class="admin-search-form" style="margin-bottom: 16px;">
+            <form method="GET" action="administrador.php<?php echo htmlspecialchars($servico_anchor, ENT_QUOTES, 'UTF-8'); ?>" class="admin-search-form" style="margin-bottom: 16px;">
                 <?php if (isset($_GET['audit_page'])) { ?>
                     <input type="hidden" name="audit_page" value="<?php echo (int)$_GET['audit_page']; ?>">
                 <?php } ?>
@@ -529,7 +539,10 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Filtrar servicos prestados</button>
+                <div class="admin-row-actions">
+                    <button type="submit" class="btn btn-primary">Filtrar servicos prestados</button>
+                    <a class="btn btn-ghost" href="<?php echo htmlspecialchars($servico_clear_href, ENT_QUOTES, 'UTF-8'); ?>">Limpar filtros</a>
+                </div>
             </form>
             <div class="admin-table-wrapper" id="tabela_servicos">
                 <table class="admin-users-table">
@@ -601,14 +614,14 @@
                                 $params_prev = $_GET;
                                 $params_prev['servico_page'] = $servico_page - 1;
                             ?>
-                                <a class="btn btn-ghost btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_prev), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="btn btn-ghost btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_prev), ENT_QUOTES, 'UTF-8'); ?><?php echo htmlspecialchars($servico_anchor, ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
                             <?php } ?>
                             <span class="admin-page-info">Pagina <?php echo $servico_page; ?> de <?php echo $servico_pages; ?></span>
                             <?php if ($servico_page < $servico_pages) {
                                 $params_next = $_GET;
                                 $params_next['servico_page'] = $servico_page + 1;
                             ?>
-                                <a class="btn btn-primary btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_next), ENT_QUOTES, 'UTF-8'); ?>">Proxima</a>
+                                <a class="btn btn-primary btn-small" href="?<?php echo htmlspecialchars(http_build_query($params_next), ENT_QUOTES, 'UTF-8'); ?><?php echo htmlspecialchars($servico_anchor, ENT_QUOTES, 'UTF-8'); ?>">Proxima</a>
                             <?php } ?>
                         </div>
                     <?php } ?>
@@ -767,12 +780,31 @@
 
         </main>
         <script>
+            function abrirModalPadrao(modalId) {
+                if (typeof window.openModalById === 'function') {
+                    window.openModalById(modalId);
+                    return;
+                }
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('is-open');
+                }
+            }
+
+            function fecharModalPadrao(modalId) {
+                if (typeof window.closeModalById === 'function') {
+                    window.closeModalById(modalId);
+                    return;
+                }
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('is-open');
+                }
+            }
+
             // Fechar o formulário de edição
             function fecharEdicao() {
-                const editForm = document.getElementById('hidden3');
-                if (editForm) {
-                    editForm.classList.remove('is-open');
-                }
+                fecharModalPadrao('hidden3');
             }
 
             // Binding dos botões de editar
@@ -793,38 +825,14 @@
             document.addEventListener('click', function(event) {
                 if (event.target.classList.contains('admin-delete')) {
                     const userId = event.target.getAttribute('data-id');
-                    // Preencher o formulário hidden4 com o ID
                     const deleteForm = document.getElementById('hidden4');
                     if (deleteForm) {
                         deleteForm.id_adm.value = userId;
-                        // Mostrar o formulário de confirmação
-                        deleteForm.classList.add('is-open');
+                        abrirModalPadrao('hidden4');
                     }
                 }
             });
 
-            // Binding do botão de novo serviço
-            document.addEventListener('click', function(event) {
-                if (event.target.classList.contains('admin-action-btn--create')) {
-                    const createForm = document.getElementById('hidden5');
-                    if (createForm) {
-                        createForm.classList.add('is-open');
-                    }
-                }
-            });
-
-            // Fechar modais ao clicar fora deles (apenas hidden2, hidden4, hidden5)
-            document.addEventListener('click', function(event) {
-                const modals = ['hidden2', 'hidden4', 'hidden5'];
-                modals.forEach(modalId => {
-                    const modal = document.getElementById(modalId);
-                    if (modal && event.target === modal) {
-                        modal.classList.remove('is-open');
-                    }
-                });
-            });
-        </script>
-        <script>
             document.addEventListener('click', function(event) {
                 const btn = event.target.closest('.admin-delete-service');
                 if (!btn) {
@@ -835,14 +843,7 @@
                     return;
                 }
                 form.id_adm.value = btn.getAttribute('data-id');
-                form.classList.add('is-open');
-            });
-
-            document.addEventListener('click', function(event) {
-                const modal = document.getElementById('hidden6');
-                if (modal && event.target === modal) {
-                    modal.classList.remove('is-open');
-                }
+                abrirModalPadrao('hidden6');
             });
         </script>
     </body>

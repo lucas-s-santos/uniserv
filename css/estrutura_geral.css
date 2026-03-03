@@ -1301,7 +1301,12 @@ body:not(.menu-frame) {
     border-radius: 999px;
 }
 
-.hidden {
+body.modal-open {
+    overflow: hidden;
+}
+
+.hidden,
+.hidden_two {
     text-align: left;
     padding: 24px;
     border: 1px solid var(--c-border);
@@ -1310,7 +1315,7 @@ body:not(.menu-frame) {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: translate(-50%, -48%) scale(0.965);
     background: var(--c-modal-bg);
     color: var(--c-text);
     width: min(var(--modal-width), 92vw);
@@ -1320,25 +1325,33 @@ body:not(.menu-frame) {
     z-index: 1001;
     box-shadow: var(--c-shadow);
     opacity: 0;
-    transition: opacity 0.2s ease, transform 0.22s ease;
+    transition: opacity 0.22s ease, transform 0.24s ease;
+    overscroll-behavior: contain;
 }
 
-.hidden label{
+.hidden label,
+.hidden_two label {
     font-family: 'Sora', 'Segoe UI', 'Tahoma', sans-serif;
 }
 
-.hidden.is-open {
+.hidden.is-open,
+.hidden_two.is-open {
     visibility: visible;
     display: block;
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
 }
 
-.hidden > input, .hidden > select {
+.hidden > input,
+.hidden > select {
     background-color: var(--c-input-bg);
     padding: 8px;
     color: var(--c-input-text);
     border: 1px solid var(--c-border);
+}
+
+.modal-source-title {
+    display: none;
 }
 
 /*.hidden > input["file"] {
@@ -1354,6 +1367,10 @@ body:not(.menu-frame) {
     border-color: var(--c-primary-2);
     color: white;
     border-radius: 10px;
+}
+
+.hidden_sub {
+    margin-top: 12px;
 }
 
 .profile-call {
@@ -1734,40 +1751,11 @@ body:not(.menu-frame) {
     width: 100px;
 }
 
-.hidden_two {
-    text-align: left;
-    padding: 24px;
-    border: 1px solid var(--c-border);
-    visibility: hidden;
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.98);
-    background: var(--c-modal-bg);
-    color: var(--c-text);
-    width: min(var(--modal-width), 92vw);
-    max-height: var(--modal-max-height);
-    overflow: auto;
-    border-radius: 16px;
-    z-index: 1001;
-    box-shadow: var(--c-shadow);
-    opacity: 0;
-    transition: opacity 0.2s ease, transform 0.22s ease;
-}
-
 .hidden_two > input, .hidden_two > select, .hidden_two > p > input {
     background-color: var(--c-input-bg);
     padding: 8px;
     border: 1px solid var(--c-border);
     color: var(--c-input-text);
-}
-
-.hidden_two.is-open {
-    visibility: visible;
-    display: block;
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
 }
 
 .inside-pop {
@@ -1795,45 +1783,71 @@ body:not(.menu-frame) {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    margin: -24px -24px 16px;
+    padding: 14px 24px;
     border-bottom: 1px solid var(--c-border);
+    background: linear-gradient(180deg, rgba(17, 24, 34, 0.92), rgba(17, 24, 34, 0.55));
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(6px);
 }
 
 .modal-title {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.3px;
 }
 
 .modal-close {
     border: 1px solid var(--c-border);
-    background: var(--c-surface-2);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--c-text);
-    padding: 6px 12px;
-    border-radius: 999px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+    font-size: 18px;
+    line-height: 1;
     cursor: pointer;
-    transition: transform 0.2s ease, border 0.2s ease;
+    transition: transform 0.2s ease, border 0.2s ease, background 0.2s ease;
 }
 
 .modal-close:hover {
     border-color: var(--c-primary);
-    transform: translateY(-1px);
+    background: rgba(67, 130, 225, 0.24);
+    transform: translateY(-1px) scale(1.03);
 }
 
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(8, 12, 20, 0.72);
+    background: radial-gradient(circle at 20% 10%, rgba(67, 130, 225, 0.26), rgba(7, 10, 16, 0.78) 40%, rgba(7, 10, 16, 0.88));
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.22s ease;
     z-index: 1000;
+    backdrop-filter: blur(2px);
 }
 
 .modal-backdrop.is-open {
     opacity: 1;
     pointer-events: auto;
+}
+
+.theme-light .modal-header {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 250, 255, 0.9));
+}
+
+.theme-light .modal-close {
+    background: rgba(18, 30, 45, 0.06);
+}
+
+.theme-light .modal-close:hover {
+    background: rgba(67, 130, 225, 0.18);
 }
 
 .caixa {

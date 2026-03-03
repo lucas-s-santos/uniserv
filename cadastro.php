@@ -14,6 +14,12 @@
     } else {
         
     }
+
+    $old_cadastro = isset($_SESSION['old_cadastro']) && is_array($_SESSION['old_cadastro']) ? $_SESSION['old_cadastro'] : [];
+    unset($_SESSION['old_cadastro']);
+    $csrf_cadastro = bin2hex(random_bytes(32));
+    $_SESSION['csrf_cadastro'] = $csrf_cadastro;
+
     include_once ("all.php");
 ?>
 <!DOCTYPE html>
@@ -32,26 +38,42 @@
                         showToast(message, "warn");
                     }
                 }
+
+                function validarEmail(valor) {
+                    if (!valor) {
+                        return true;
+                    }
+                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+                }
+
+                function alternarSenhaCadastro(inputId) {
+                    var input = document.getElementById(inputId);
+                    if (!input) {
+                        return;
+                    }
+                    input.type = input.type === "password" ? "text" : "password";
+                }
+
                 function validarDados() {
                     let formCAD = document.getElementById("form1");
-                    let campoNome = formCAD.nome.value,
-                        campoEstado = formCAD.estado,
-                        campoCidade = formCAD.cidade.value,
-                        campoCpf = formCAD.cpf.value,
-                        campoEmail = formCAD.email.value,
-                        campoTel = formCAD.telefone.value,
-                        campoData = formCAD.data_ani,
-                        campoGen = formCAD.genero,
-                        campoSenha = formCAD.senha.value,
-                        campoConf = formCAD.confsenha.value;
+                    let campoEstado = formCAD.estado;
+                    let campoCidade = formCAD.cidade.value;
+                    let campoCpf = formCAD.cpf.value;
+                    let campoEmail = formCAD.email.value;
+                    let campoTel = formCAD.telefone.value;
+                    let campoData = formCAD.data_ani.value;
+                    let campoSenha = formCAD.senha.value;
+                    let campoConf = formCAD.confsenha.value;
+                    let cpfDigitos = campoCpf.replace(/\D/g, "");
+                    let telDigitos = campoTel.replace(/\D/g, "");
 
-                    for (var i=0; i < campoEstado.length; i++) {
+                    for (var i = 0; i < campoEstado.length; i++) {
                         if (campoEstado[i].selected && campoEstado[i].value == "") {
                             showFormNotice("Selecione um estado.");
                             return false;
-                        }       
+                        }
                     }
-                    if (campoCpf.length != 14) {
+                    if (cpfDigitos.length !== 11) {
                         showFormNotice("CPF incompleto.");
                         return false;
                     }
@@ -59,7 +81,7 @@
                         showFormNotice("CPF invalido.");
                         return false;
                     }
-                    if (campoTel.length != 15 && campoTel != "") {
+                    if (telDigitos !== "" && telDigitos.length !== 11) {
                         showFormNotice("Telefone incompleto.");
                         return false;
                     }
@@ -67,17 +89,29 @@
                         showFormNotice("Informe sua cidade.");
                         return false;
                     }
-                    
+                    if (!validarEmail(campoEmail.trim())) {
+                        showFormNotice("Informe um e-mail valido.");
+                        return false;
+                    }
+                    if (!campoData) {
+                        showFormNotice("Informe sua data de nascimento.");
+                        return false;
+                    }
                     if (campoSenha.length < 8) {
                         showFormNotice("Senha deve ter no minimo 8 caracteres.");
+                        return false;
+                    }
+                    if (!/[A-Za-z]/.test(campoSenha) || !/[0-9]/.test(campoSenha)) {
+                        showFormNotice("Use pelo menos 1 letra e 1 numero na senha.");
                         return false;
                     }
                     if (campoSenha != campoConf) {
                         showFormNotice("As senhas nao conferem.");
                         return false;
                     }
-                    return true;                    
+                    return true;
                 }
+
                 function preencherLocalizacao(latId, lngId, statusId) {
                     if (!navigator.geolocation) {
                         showFormNotice("Navegador nao suporta geolocalizacao.");
@@ -117,45 +151,50 @@
         <form name="form1" method="POST" action="processa_cad.php" id="form1">
             <div class="fonte">
                 <div class="dentro form-card">
+                    <?php
+                        $estado_old = isset($old_cadastro['estado']) ? (string)$old_cadastro['estado'] : '';
+                        $genero_old = isset($old_cadastro['genero']) ? (string)$old_cadastro['genero'] : '';
+                    ?>
                     <div class="title" style="text-align: center;">Cadastre-se</div>
                     <div class="form-grid">
-                        <div class="campo-texto full"> <label>Nome completo</label> <input type="text" name="nome" placeholder="Diga seu nome" required> </div>
-                        <div class="campo-texto"> <label>Apelido</label> <input type="text" name="apelido" placeholder="Escreva um apelido pequeno ou seu primeiro nome" required> </div>
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_cadastro, ENT_QUOTES, 'UTF-8'); ?>">
+                        <div class="campo-texto full"> <label>Nome completo</label> <input type="text" name="nome" placeholder="Diga seu nome" autocomplete="name" value="<?php echo htmlspecialchars((string)($old_cadastro['nome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required> </div>
+                        <div class="campo-texto"> <label>Apelido</label> <input type="text" name="apelido" placeholder="Escreva um apelido pequeno ou seu primeiro nome" value="<?php echo htmlspecialchars((string)($old_cadastro['apelido'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required> </div>
                         <div class="campo-texto"> 
                             <label>Estado</label>
-                            <select name="estado" id="estado">
-                                <option value="">Escolha
-                                <option value="Acre">Acre-AC
-                                <option value="Alagoas">Alagoas-AL
-                                <option value="Amapa">Amapa-AP
-                                <option value="Amazonas">Amazonas-AM
-                                <option value="Bahia">Bahia-BA
-                                <option value="Ceara">Ceara-CE
-                                <option value="Distrito federal">Distrito_federal-DF
-                                <option value="Espirito Santo">Espirito_Santo-ES
-                                <option value="Goias">Goiás - GO
-                                <option value="Maranhão">Maranhão - MA
-                                <option value="Mato Grosso">Mato Grosso – MT
-                                <option value="Mato Grosso do Sul">Mato Grosso do Sul - MS
-                                <option value="Minas Gerais">Minas Gerais - MG
-                                <option value="Pará">Pará - PA
-                                <option value="Paraíba">Paraíba – PB
-                                <option value="Paraná">Paraná - PR
-                                <option value="Pernambuco">Pernambuco - PE
-                                <option value="Piauí">Piauí - PI
-                                <option value="Rio de Janeiro">Rio de Janeiro – RJ
-                                <option value="Rio Grande do Norte">Rio Grande do Norte - RN
-                                <option value="Rio Grande do Sul">Rio Grande do Sul - RS
-                                <option value="Rondônia">Rondônia - RO
-                                <option value="Roraima">Roraima - RR
-                                <option value="Santa Catarina">Santa Catarina - SC
-                                <option value="São Paulo">São Paulo - SP
-                                <option value="Sergipe">Sergipe - SE
-                                <option value="Tocantins">Tocantins - TO
+                            <select name="estado" id="estado" required>
+                                <option value="" <?php echo $estado_old === '' ? 'selected' : ''; ?>>Escolha</option>
+                                <option value="Acre" <?php echo $estado_old === 'Acre' ? 'selected' : ''; ?>>Acre-AC</option>
+                                <option value="Alagoas" <?php echo $estado_old === 'Alagoas' ? 'selected' : ''; ?>>Alagoas-AL</option>
+                                <option value="Amapa" <?php echo $estado_old === 'Amapa' ? 'selected' : ''; ?>>Amapa-AP</option>
+                                <option value="Amazonas" <?php echo $estado_old === 'Amazonas' ? 'selected' : ''; ?>>Amazonas-AM</option>
+                                <option value="Bahia" <?php echo $estado_old === 'Bahia' ? 'selected' : ''; ?>>Bahia-BA</option>
+                                <option value="Ceara" <?php echo $estado_old === 'Ceara' ? 'selected' : ''; ?>>Ceara-CE</option>
+                                <option value="Distrito federal" <?php echo $estado_old === 'Distrito federal' ? 'selected' : ''; ?>>Distrito federal-DF</option>
+                                <option value="Espirito Santo" <?php echo $estado_old === 'Espirito Santo' ? 'selected' : ''; ?>>Espirito Santo-ES</option>
+                                <option value="Goias" <?php echo $estado_old === 'Goias' ? 'selected' : ''; ?>>Goias-GO</option>
+                                <option value="Maranhão" <?php echo $estado_old === 'Maranhão' ? 'selected' : ''; ?>>Maranhao-MA</option>
+                                <option value="Mato Grosso" <?php echo $estado_old === 'Mato Grosso' ? 'selected' : ''; ?>>Mato Grosso-MT</option>
+                                <option value="Mato Grosso do Sul" <?php echo $estado_old === 'Mato Grosso do Sul' ? 'selected' : ''; ?>>Mato Grosso do Sul-MS</option>
+                                <option value="Minas Gerais" <?php echo $estado_old === 'Minas Gerais' ? 'selected' : ''; ?>>Minas Gerais-MG</option>
+                                <option value="Pará" <?php echo $estado_old === 'Pará' ? 'selected' : ''; ?>>Para-PA</option>
+                                <option value="Paraíba" <?php echo $estado_old === 'Paraíba' ? 'selected' : ''; ?>>Paraiba-PB</option>
+                                <option value="Paraná" <?php echo $estado_old === 'Paraná' ? 'selected' : ''; ?>>Parana-PR</option>
+                                <option value="Pernambuco" <?php echo $estado_old === 'Pernambuco' ? 'selected' : ''; ?>>Pernambuco-PE</option>
+                                <option value="Piauí" <?php echo $estado_old === 'Piauí' ? 'selected' : ''; ?>>Piaui-PI</option>
+                                <option value="Rio de Janeiro" <?php echo $estado_old === 'Rio de Janeiro' ? 'selected' : ''; ?>>Rio de Janeiro-RJ</option>
+                                <option value="Rio Grande do Norte" <?php echo $estado_old === 'Rio Grande do Norte' ? 'selected' : ''; ?>>Rio Grande do Norte-RN</option>
+                                <option value="Rio Grande do Sul" <?php echo $estado_old === 'Rio Grande do Sul' ? 'selected' : ''; ?>>Rio Grande do Sul-RS</option>
+                                <option value="Rondônia" <?php echo $estado_old === 'Rondônia' ? 'selected' : ''; ?>>Rondonia-RO</option>
+                                <option value="Roraima" <?php echo $estado_old === 'Roraima' ? 'selected' : ''; ?>>Roraima-RR</option>
+                                <option value="Santa Catarina" <?php echo $estado_old === 'Santa Catarina' ? 'selected' : ''; ?>>Santa Catarina-SC</option>
+                                <option value="São Paulo" <?php echo $estado_old === 'São Paulo' ? 'selected' : ''; ?>>Sao Paulo-SP</option>
+                                <option value="Sergipe" <?php echo $estado_old === 'Sergipe' ? 'selected' : ''; ?>>Sergipe-SE</option>
+                                <option value="Tocantins" <?php echo $estado_old === 'Tocantins' ? 'selected' : ''; ?>>Tocantins-TO</option>
                             </select>
                         </div>
-                        <div class="campo-texto"> <label>CPF </label> <input type="text" name="cpf" id="cpf" placeholder="Digite o cpf" required> </div>
-                        <div class="campo-texto"> <label>Cidade </label> <input type="text" name="cidade" placeholder="Digite sua cidade" required> </div>
+                        <div class="campo-texto"> <label>CPF </label> <input type="text" name="cpf" id="cpf" placeholder="000.000.000-00" inputmode="numeric" autocomplete="username" value="<?php echo htmlspecialchars((string)($old_cadastro['cpf'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required> </div>
+                        <div class="campo-texto"> <label>Cidade </label> <input type="text" name="cidade" placeholder="Digite sua cidade" autocomplete="address-level2" value="<?php echo htmlspecialchars((string)($old_cadastro['cidade'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required> </div>
                         <div class="campo-texto full">
                             <label>Localizacao (opcional)</label>
                             <div class="button-group">
@@ -163,25 +202,39 @@
                             </div>
                             <div class="texto" id="cadLocalStatus"></div>
                         </div>
-                        <div class="campo-texto"> <label>E-mail(opcional)</label> <input type="text" name="email" placeholder="É opcional, mas pode te ajudar"> </div>
-                        <div class="campo-texto"> <label>Telefone(opcional) </label> <input type="text" id="telefone" name="telefone" placeholder="É opcional, mas facilita comunicação"> </div>
-                        <div class="campo-texto"> <label>Data de nascimento </label> <input type="date" id="data_ani" name="data_ani" required> </div>
+                        <div class="campo-texto"> <label>E-mail(opcional)</label> <input type="email" name="email" placeholder="nome@exemplo.com" autocomplete="email" value="<?php echo htmlspecialchars((string)($old_cadastro['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"> </div>
+                        <div class="campo-texto"> <label>Telefone(opcional) </label> <input type="text" id="telefone" name="telefone" placeholder="(00)0 0000-0000" autocomplete="tel" value="<?php echo htmlspecialchars((string)($old_cadastro['telefone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"> </div>
+                        <div class="campo-texto"> <label>Data de nascimento </label> <input type="date" id="data_ani" name="data_ani" value="<?php echo htmlspecialchars((string)($old_cadastro['data_ani'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required> </div>
                         <div class="campo-texto"> <label>Gênero </label>
                             <select name="genero"> 
-                                <option value="">Escolha
-                                <option value="M">Masculino
-                                <option value="F">Feminino
-                                <option value="O">Outro
-                                <option value="P">Prefiro não falar
+                                <option value="" <?php echo $genero_old === '' ? 'selected' : ''; ?>>Escolha</option>
+                                <option value="M" <?php echo $genero_old === 'M' ? 'selected' : ''; ?>>Masculino</option>
+                                <option value="F" <?php echo $genero_old === 'F' ? 'selected' : ''; ?>>Feminino</option>
+                                <option value="O" <?php echo $genero_old === 'O' ? 'selected' : ''; ?>>Outro</option>
+                                <option value="P" <?php echo $genero_old === 'P' ? 'selected' : ''; ?>>Prefiro não falar</option>
                             </select>
                         </div>
-                        <div class="campo-texto"> <label>Crie uma senha </label> <input type="password" name="senha" placeholder="Digite a senha" required> </div>
-                        <div class="campo-texto"> <label>Repita a senha </label> <input type="password" name="confsenha" placeholder="Digite a senha novamente" required> </div>
+                        <div class="campo-texto">
+                            <label>Crie uma senha </label>
+                            <input type="password" name="senha" id="cad_senha" placeholder="Minimo 8 caracteres com letra e numero" autocomplete="new-password" minlength="8" required>
+                            <div class="button-group" style="margin-top: 8px;">
+                                <input type="button" value="Mostrar senha" onclick="alternarSenhaCadastro('cad_senha')">
+                            </div>
+                        </div>
+                        <div class="campo-texto">
+                            <label>Repita a senha </label>
+                            <input type="password" name="confsenha" id="cad_confsenha" placeholder="Digite a senha novamente" autocomplete="new-password" minlength="8" required>
+                            <div class="button-group" style="margin-top: 8px;">
+                                <input type="button" value="Mostrar senha" onclick="alternarSenhaCadastro('cad_confsenha')">
+                            </div>
+                        </div>
                     </div>
                     <div class="button-group"><input type="reset" value="Limpar"><input type="submit" value="Cadastrar" onclick="return validarDados()"></div>
                     <input type="hidden" name="latitude" id="cadLat" value="">
                     <input type="hidden" name="longitude" id="cadLng" value="">
-                    <br><br>
+                    <div class="texto" style="margin-top: 10px; text-align: center;">
+                        Ja tem conta? <a href="login.php">Fazer login</a>
+                    </div>
                 </div>
             </div>
         </form>

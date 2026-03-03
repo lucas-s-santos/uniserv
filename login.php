@@ -12,6 +12,11 @@
         exit;
     }
 
+    $csrf_login = bin2hex(random_bytes(32));
+    $_SESSION['csrf_login'] = $csrf_login;
+    $old_login_cpf = isset($_SESSION['old_login_cpf']) ? (string)$_SESSION['old_login_cpf'] : '';
+    unset($_SESSION['old_login_cpf']);
+
     include_once("all.php");
 ?>
 
@@ -26,8 +31,34 @@
         <link rel="stylesheet" href="css/estrutura_geral.css">
         <title>Página principal</title>
         <script>
-            function testarSenha() {
+            function showFormNotice(message) {
+                if (window.showToast) {
+                    showToast(message, "warn");
+                }
+            }
+
+            function validarLogin() {
+                const form = document.getElementById("form2");
+                const cpfDigits = (form.cpf_login.value || "").replace(/\D/g, "");
+                const senha = form.senha_login.value || "";
+
+                if (cpfDigits.length !== 11) {
+                    showFormNotice("Informe um CPF valido.");
+                    return false;
+                }
+                if (senha.trim() === "") {
+                    showFormNotice("Informe sua senha.");
+                    return false;
+                }
                 return true;
+            }
+
+            function alternarSenhaLogin() {
+                const senha = document.getElementById("senha");
+                if (!senha) {
+                    return;
+                }
+                senha.type = senha.type === "password" ? "text" : "password";
             }
         </script>
     </head>
@@ -41,10 +72,23 @@
                 <div class="dentro form-card">
                     <div class="title" style="text-align: center;">Login</div>
                     <div class="form-grid form-grid--single">
-                        <div class="campo-texto"> <label>Digite o seu cpf</label> <input type="text" name="cpf_login" id="cpf" placeholder="Digite o cpf" required> </div>
-                        <div class="campo-texto"> <label>Digite a senha</label> <input type="password" name="senha_login" id="senha" placeholder="Digite a senha" required> </div>
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_login, ENT_QUOTES, 'UTF-8'); ?>">
+                        <div class="campo-texto">
+                            <label>Digite o seu CPF</label>
+                            <input type="text" name="cpf_login" id="cpf" placeholder="000.000.000-00" value="<?php echo htmlspecialchars($old_login_cpf, ENT_QUOTES, 'UTF-8'); ?>" autocomplete="username" inputmode="numeric" required>
+                        </div>
+                        <div class="campo-texto">
+                            <label>Digite a senha</label>
+                            <input type="password" name="senha_login" id="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+                            <div class="button-group" style="margin-top: 8px;">
+                                <input type="button" value="Mostrar senha" onclick="alternarSenhaLogin()">
+                            </div>
+                        </div>
                     </div>
-                    <div class="button-group"><input type="submit" value="Entrar" onclick="return testarSenha()"></div>
+                    <div class="button-group"><input type="submit" value="Entrar" onclick="return validarLogin()"></div>
+                    <div class="texto" style="margin-top: 10px; text-align: center;">
+                        Ainda nao tem conta? <a href="cadastro.php">Cadastre-se</a>
+                    </div>
                 </div>
             </div>
         </form>    

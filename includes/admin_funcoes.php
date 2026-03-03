@@ -25,6 +25,15 @@
         $funcao_offset = ($funcao_page - 1) * $funcao_limit;
     }
 
+    $funcao_anchor = '#secao-servicos-sistema';
+    $qs_funcao_clear = $_GET;
+    unset($qs_funcao_clear['funcao_q'], $qs_funcao_clear['funcao_categoria'], $qs_funcao_clear['funcao_page']);
+    $funcao_clear_href = 'administrador.php';
+    if (!empty($qs_funcao_clear)) {
+        $funcao_clear_href .= '?' . http_build_query($qs_funcao_clear);
+    }
+    $funcao_clear_href .= $funcao_anchor;
+
     $funcoes_admin = [];
     $stmt = $conn->prepare("SELECT f.id_funcoes, f.nome_func, f.categoria, f.valor_base, f.duracao_estimada, f.descricao,
             (SELECT COUNT(*) FROM trabalhador_funcoes tf WHERE tf.funcoes_id_funcoes = f.id_funcoes) AS total_colaboradores,
@@ -44,7 +53,7 @@
     $qs_base = $_GET;
 ?>
 
-<section class="admin-section">
+<section class="admin-section" id="secao-servicos-sistema">
     <div class="admin-section-header">
         <div>
             <div class="admin-section-title">Servicos do Sistema</div>
@@ -52,7 +61,7 @@
         </div>
     </div>
 
-    <form method="GET" action="administrador.php" class="admin-search-form" style="margin-bottom: 16px;">
+    <form method="GET" action="administrador.php<?php echo htmlspecialchars($funcao_anchor, ENT_QUOTES, 'UTF-8'); ?>" class="admin-search-form" style="margin-bottom: 16px;">
         <?php if (isset($_GET['audit_page'])) { ?>
             <input type="hidden" name="audit_page" value="<?php echo (int)$_GET['audit_page']; ?>">
         <?php } ?>
@@ -78,7 +87,10 @@
                 <input type="text" id="funcao_categoria" name="funcao_categoria" value="<?php echo htmlspecialchars($funcao_categoria, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex: Limpeza automotiva">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Filtrar servicos</button>
+        <div class="admin-row-actions">
+            <button type="submit" class="btn btn-primary">Filtrar servicos</button>
+            <a class="btn btn-ghost" href="<?php echo htmlspecialchars($funcao_clear_href, ENT_QUOTES, 'UTF-8'); ?>">Limpar filtros</a>
+        </div>
     </form>
 
     <div class="admin-table-wrapper">
@@ -151,14 +163,14 @@
                         $prev = $qs_base;
                         $prev['funcao_page'] = $funcao_page - 1;
                     ?>
-                        <a class="btn btn-ghost btn-small" href="?<?php echo htmlspecialchars(http_build_query($prev), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                        <a class="btn btn-ghost btn-small" href="?<?php echo htmlspecialchars(http_build_query($prev), ENT_QUOTES, 'UTF-8'); ?><?php echo htmlspecialchars($funcao_anchor, ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
                     <?php } ?>
                     <span class="admin-page-info">Pagina <?php echo $funcao_page; ?> de <?php echo $funcao_pages; ?></span>
                     <?php if ($funcao_page < $funcao_pages) {
                         $next = $qs_base;
                         $next['funcao_page'] = $funcao_page + 1;
                     ?>
-                        <a class="btn btn-primary btn-small" href="?<?php echo htmlspecialchars(http_build_query($next), ENT_QUOTES, 'UTF-8'); ?>">Proxima</a>
+                        <a class="btn btn-primary btn-small" href="?<?php echo htmlspecialchars(http_build_query($next), ENT_QUOTES, 'UTF-8'); ?><?php echo htmlspecialchars($funcao_anchor, ENT_QUOTES, 'UTF-8'); ?>">Proxima</a>
                     <?php } ?>
                 </div>
             <?php } ?>
@@ -213,6 +225,17 @@
 </form>
 
 <script>
+    function abrirModalAdmin(modalId) {
+        if (typeof window.openModalById === 'function') {
+            window.openModalById(modalId);
+            return;
+        }
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('is-open');
+        }
+    }
+
     document.addEventListener('click', function (event) {
         var editBtn = event.target.closest('.admin-edit-funcao');
         if (editBtn) {
@@ -227,7 +250,7 @@
             document.getElementById('edit_duracao_func').value = editBtn.getAttribute('data-duracao') || '';
             document.getElementById('edit_descricao_func').value = editBtn.getAttribute('data-descricao') || '';
             document.getElementById('edit_motivo_func').value = '';
-            formEdit.classList.add('is-open');
+            abrirModalAdmin('hidden_funcao_edit');
             return;
         }
 
@@ -239,17 +262,8 @@
             }
             document.getElementById('id_funcao_delete').value = deleteBtn.getAttribute('data-id') || '';
             document.getElementById('motivo_exclusao_funcao').value = '';
-            formDelete.classList.add('is-open');
+            abrirModalAdmin('hidden_funcao_delete');
             return;
-        }
-
-        var modalEdit = document.getElementById('hidden_funcao_edit');
-        var modalDelete = document.getElementById('hidden_funcao_delete');
-        if (modalEdit && event.target === modalEdit) {
-            modalEdit.classList.remove('is-open');
-        }
-        if (modalDelete && event.target === modalDelete) {
-            modalDelete.classList.remove('is-open');
         }
     });
 </script>
